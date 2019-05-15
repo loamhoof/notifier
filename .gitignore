@@ -1,6 +1,18 @@
+/api/db
+
 #Added by git-add-untracked-files
 /ui/dist
 #Added by git-add-untracked-files
 /ui/elm-stuff
 #Added by git-add-untracked-files
 /ui/node_modules
+
+/api/_build/
+/api/cover/
+/api/deps/
+/api/doc/
+/api/.fetch
+/api/priv/static/
+erl_crash.dump
+*.ez
+api-*.tar
