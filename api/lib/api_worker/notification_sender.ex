@@ -14,15 +14,28 @@ defmodule ApiWorker.NotificationSender do
 
   @impl true
   def init(:ok) do
-    send(self(), :notify)
+    mode =
+      case Application.fetch_env(:api, :notification_mode) do
+        :error -> :log
+        {:ok, mode} -> mode
+      end
 
-    {:ok, nil}
+    unless mode in [:log, :bullet] do
+      error_reason = "invalid notification_mode: #{inspect(mode)}"
+      Logger.error(error_reason)
+
+      {:stop, error_reason}
+    else
+      send(self(), :notify)
+
+      {:ok, %{mode: mode}}
+    end
   end
 
   defp loop(), do: Process.send_after(self(), :notify, 5000)
 
   @impl true
-  def handle_info(:notify, nil) do
+  def handle_info(:notify, state = %{mode: mode}) do
     results =
       Repo.all(
         from r in Result,
@@ -37,8 +50,7 @@ defmodule ApiWorker.NotificationSender do
 
       with {:ok, bullet} <- module.to_bullet(task.name, task.config, result.load),
            {title, body, url} <- apply_patches(task.config, bullet),
-           {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 <-
-             ApiWorker.Pushbullet.push(title, body, url) do
+           :ok <- apply(__MODULE__, String.to_atom("notify_#{mode}"), [title, body, url]) do
         change(result, %{sent: true})
         |> Repo.update()
       else
@@ -59,7 +71,26 @@ defmodule ApiWorker.NotificationSender do
 
     loop()
 
-    {:noreply, nil}
+    {:noreply, state}
+  end
+
+  def notify_log(title, body, url) do
+    Logger.info(Enum.join(["bullet", title, body, url], " "))
+
+    :ok
+  end
+
+  def notify_bullet(title, body, url) do
+    case ApiWorker.Pushbullet.push(title, body, url) do
+      {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
+        :ok
+
+      {:ok, %{status_code: status_code}} ->
+        {:error, "unexpected status code when notifying: #{status_code}"}
+
+      anything ->
+        {:error, "error when notifying: #{inspect(anything)}"}
+    end
   end
 
   defp apply_patches(config, bullet) do

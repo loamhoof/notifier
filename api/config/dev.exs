@@ -57,4 +57,6 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
-config :api, :pushbullet_token, File.read!("/home/loam/.pushbullet") |> String.trim_trailing()
+config :api,
+       :pushbullet_token,
+       File.read!("/home/loam/.pushbullet") |> String.trim_trailing()

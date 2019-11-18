@@ -17,10 +17,6 @@ defmodule ApiWorker.Pushbullet do
   defdelegate process_response_body(body), to: Jason, as: :decode!
 
   def push(title, body, url) do
-    # post("/pushes", %{type: "link", title: title, body: body, url: url})
-    require Logger
-
-    Logger.info(Enum.join(["bullet", title, body, url], " "))
-    {:ok, %{status_code: 200}}
+    post("/pushes", %{type: "link", title: title, body: body, url: url})
   end
 end
