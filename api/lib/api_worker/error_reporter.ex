@@ -34,26 +34,27 @@ defmodule ApiWorker.ErrorReporter do
 
   @impl true
   def handle_info(:report, nil) do
-    results =
-      Repo.all(
-        from r in Result,
-          where: r.error == true and r.error_reported == false
-      )
+    Logger.info("TODO: error reporter")
 
-    # TODO: front url?
-    case ApiWorker.Pushbullet.push("Error Report", "#{length(results)} errors", "") do
-      {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
-        for result <- results do
-          change(result, %{error_reported: true})
-          |> Repo.update()
-        end
+    # results =
+    #   Repo.all(
+    #     from r in Result,
+    #       where: r.error == true and r.error_reported == false
+    #   )
 
-      {:error, reason} ->
-        Logger.error("could not send report: #{inspect(reason)}")
+    # case ApiWorker.Pushbullet.push("Error Report", "#{length(results)} errors", "") do
+    #   {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
+    #     for result <- results do
+    #       change(result, %{error_reported: true})
+    #       |> Repo.update()
+    #     end
 
-      anything ->
-        Logger.warn("could not send report: #{inspect(anything)}")
-    end
+    #   {:error, reason} ->
+    #     Logger.error("could not send report: #{inspect(reason)}")
+
+    #   anything ->
+    #     Logger.warn("could not send report: #{inspect(anything)}")
+    # end
 
     loop()
 

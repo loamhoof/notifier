@@ -3,23 +3,15 @@ defmodule ApiWorker.Worker.RSS do
 
   @impl true
   def run(%{"feed" => feed} = config) do
-    case Scrape.feed(feed) do
-      {:error, reason} ->
-        {:error, inspect(reason)}
+    filters = Map.get(config, "filters", [])
 
-      {:ok, %{items: []}} ->
-        {:error, "empty feed"}
-
-      {:ok, %{items: items}} ->
-        filters = Map.get(config, "filters", [])
-
-        case find(items, filters) do
-          nil ->
-            :nothing
-
-          item ->
-            {:ok, item |> Map.new(fn {k, v} -> {Atom.to_string(k), v} end)}
-        end
+    with {:ok, %{items: items}} <- Scrape.feed(feed),
+         item when not is_nil(item) <- find(items, filters) do
+      to_notif(item)
+    else
+      nil -> :nothing
+      {:ok, %{items: []}} -> {:error, "empty feed"}
+      {:error, reason} -> {:error, inspect(reason)}
     end
   end
 
@@ -36,13 +28,11 @@ defmodule ApiWorker.Worker.RSS do
     end
   end
 
-  @impl true
-  def to_bullet(task_name, _config, %{"title" => title, "article_url" => article_url}) do
-    {:ok, {task_name, title, article_url}}
+  def to_notif(%{title: title, article_url: article_url}) do
+    {:ok, title, article_url}
   end
 
-  @impl true
-  def to_bullet(_, _, _) do
+  def to_notif(_) do
     {:error, "missing `title` or `article_url`"}
   end
 end

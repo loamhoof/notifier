@@ -23,7 +23,7 @@ defmodule Api.Task.Config do
   defp validate_patch(changeset, patch) do
     changeset
     |> validate_binary(patch, "field")
-    |> validate_in(patch, "field", ~w|title body link|)
+    |> validate_in(patch, "field", ~w|title body url|)
     |> validate_regex(patch, "pattern")
     |> validate_binary(patch, "replacement")
   end

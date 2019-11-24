@@ -1,6 +1,4 @@
 defmodule ApiWorker.Pushbullet do
-  @type bullet :: {title :: iodata, body :: iodata, url :: iodata}
-
   use HTTPoison.Base
 
   def process_request_url(url) do
@@ -16,7 +14,7 @@ defmodule ApiWorker.Pushbullet do
 
   defdelegate process_response_body(body), to: Jason, as: :decode!
 
-  def push(title, body, url) do
+  def push({title, body, url}) do
     post("/pushes", %{type: "link", title: title, body: body, url: url})
   end
 end

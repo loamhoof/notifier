@@ -42,30 +42,26 @@ defmodule ApiWorker.NotificationSender do
           join: t in Task,
           on: r.task_id == t.id,
           select: {t, r},
-          where: r.sent == false and r.error == false
+          where: r.sent == false
       )
 
     for {task, result} <- results do
-      module = ApiWorker.WorkerRegistry.which_module(task.type)
+      notif = {task.name, result.body, result.url}
+      patches = Map.get(task.config, "patches", [])
 
-      with {:ok, bullet} <- module.to_bullet(task.name, task.config, result.load),
-           {title, body, url} <- apply_patches(task.config, bullet),
-           :ok <- apply(__MODULE__, String.to_atom("notify_#{mode}"), [title, body, url]) do
-        change(result, %{sent: true})
-        |> Repo.update()
-      else
-        {:error, reason} ->
-          Logger.warn("could not send bullet [#{task.name} / #{result.id}]: #{inspect(reason)}")
+      sent =
+        ApiWorker.Notification.apply_patches(patches, notif)
+        |> notify(mode)
 
-          change(result, %{error: true, error_reason: inspect(reason)})
+      case sent do
+        :ok ->
+          now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+          change(result, %{sent: true, sent_at: now})
           |> Repo.update()
 
-        anything ->
-          Logger.warn(
-            "could not send bullet, will retry later [#{task.name} / #{result.id}]: #{
-              inspect(anything)
-            }"
-          )
+        {:error, reason} ->
+          Logger.warn("could not send bullet [#{task.name} / #{result.id}]: #{inspect(reason)}")
       end
     end
 
@@ -74,14 +70,19 @@ defmodule ApiWorker.NotificationSender do
     {:noreply, state}
   end
 
-  def notify_log(title, body, url) do
-    Logger.info(Enum.join(["bullet", title, body, url], " "))
+  @spec notify(ApiWorker.Notification.t(), atom) :: :ok | {:error, iodata}
+  defp notify(notif, mode) do
+    apply(__MODULE__, String.to_atom("notify_#{mode}"), [notif])
+  end
+
+  def notify_log(notif) do
+    Logger.info(Enum.join(["bullet"] ++ Tuple.to_list(notif), " "))
 
     :ok
   end
 
-  def notify_bullet(title, body, url) do
-    case ApiWorker.Pushbullet.push(title, body, url) do
+  def notify_bullet(notif) do
+    case ApiWorker.Pushbullet.push(notif) do
       {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
         :ok
 
@@ -90,24 +91,6 @@ defmodule ApiWorker.NotificationSender do
 
       anything ->
         {:error, "error when notifying: #{inspect(anything)}"}
-    end
-  end
-
-  defp apply_patches(config, bullet) do
-    Map.get(config, "patches", [])
-    |> Enum.reduce(bullet, &apply_patch(&1, &2))
-  end
-
-  defp apply_patch(
-         %{"field" => field, "pattern" => pattern, "replacement" => replacement},
-         {title, body, url}
-       ) do
-    regex = Regex.compile!(pattern)
-
-    case field do
-      "title" -> {Regex.replace(regex, title, replacement), body, url}
-      "body" -> {title, Regex.replace(regex, body, replacement), url}
-      "link" -> {title, body, Regex.replace(regex, url, replacement)}
     end
   end
 end

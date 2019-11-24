@@ -2,36 +2,74 @@ defmodule ApiWorker.Worker.SwitchDiscount do
   use ApiWorker.Worker
 
   @impl true
-  def run(%{"country" => country, "id" => id}) do
+  def run(%{"country" => country, "id" => id, "link" => link}) do
     url = "https://api.ec.nintendo.com/v1/price?country=#{country}&lang=en&ids=#{id}"
 
-    with {:ok, %{body: body}} <- HTTPoison.get(url),
-         {:ok, %{"prices" => [%{"discount_price" => price} | _]}} <- Jason.decode(body) do
-      {:ok, price}
+    with {:ok, body} <- get(url),
+         {:ok, body} <- Jason.decode(body) do
+      to_notif(body, link)
     else
-      {:ok, _body} -> :nothing
-      {:error, reason} -> {:error, inspect(reason)}
+      {:error, reason} -> {:error, reason}
       anything -> {:error, "unexpected error: #{inspect(anything)}"}
     end
   end
 
-  @impl true
-  def to_bullet(task_name, %{"link" => link}, load) do
-    %{"amount" => price, "start_datetime" => from, "end_datetime" => to} = load
+  defp get(url) do
+    case HTTPoison.get(url) do
+      {:ok, %{body: body, status_code: 200}} -> body
+      {:ok, resp} -> {:error, "error contacting Nintendo's API: #{inspect(resp)}}"}
+      {:error, error} -> {:error, error}
+    end
+  end
 
+  defp to_notif(%{prices: [prices]}, link) do
+    unless Map.has_key?(prices, "discount_price") do
+      :nothing
+    else
+      case extract(prices) do
+        :error ->
+          {:error, "unexpected prices body: #{inspect(prices)}"}
+
+        {:ok, regular_value, discount_value, from, to} ->
+          case make_notif_body(regular_value, discount_value, from, to) do
+            {:ok, notif_body} -> {:ok, notif_body, link}
+            {:error, reason} -> {:error, "unexpected error: #{inspect(reason)}"}
+          end
+      end
+    end
+  end
+
+  defp to_notif(body, _link) do
+    {:error, "unexpected body: #{inspect(body)}"}
+  end
+
+  defp extract(%{
+         "regular_price" => %{"raw_value" => regular_value},
+         "discount_price" => %{
+           "raw_value" => discount_value,
+           "start_datetime" => from,
+           "end_datetime" => to
+         }
+       }) do
+    {:ok, regular_value, discount_value, from, to}
+  end
+
+  defp extract(_prices) do
+    :error
+  end
+
+  defp make_notif_body(regular_value, discount_value, from, to) do
     with {:ok, from, _} <- DateTime.from_iso8601(from),
          {:ok, to, _} <- DateTime.from_iso8601(to) do
       from = from |> DateTime.to_date() |> Date.to_string()
       to = to |> DateTime.to_date() |> Date.to_string()
-      message = "#{price} from #{from} to #{to}"
-      {:ok, {task_name, message, link}}
+      discount = :erlang.float_to_binary((1 - discount_value / regular_value) * 100, decimals: 0)
+      message = "#{discount_value} (-#{discount}%) from #{from} to #{to}"
+      {:ok, message}
     else
       anything -> {:error, "unexpected error: #{inspect(anything)}"}
     end
   end
-
-  @impl true
-  def to_bullet(_, _, _) do
-    {:error, "missing `amount` or `start_datetime` or `end_datetime`"}
-  end
 end
+
+# {"personalized":false,"country":"JP","prices":[{"title_id":70010000016519,"sales_status":"onsale","regular_price":{"amount":"3,500円","currency":"JPY","raw_value":"3500"},"discount_price":{"amount":"2,800円","currency":"JPY","raw_value":"2800","start_datetime":"2019-11-10T15:00:00Z","end_datetime":"2019-12-04T14:59:59Z"}}]}

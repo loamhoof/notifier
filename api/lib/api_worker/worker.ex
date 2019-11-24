@@ -1,7 +1,8 @@
 defmodule ApiWorker.Worker do
-  @callback run(map()) :: {:ok, any()} | :nothing | {:error, binary()}
-  @callback to_bullet(binary(), map(), any()) ::
-              {:ok, ApiWorker.Pushbullet.bullet()} | {:error, binary()}
+  @callback run(map()) ::
+              {:ok, body :: String.t(), url :: String.t()}
+              | :nothing
+              | {:error, reason :: String.t()}
 
   ## Client API
 
@@ -45,9 +46,14 @@ defmodule ApiWorker.Worker do
       def handle_info(:check, {task_name, _, config} = state) do
         case run(config) do
           # send to load processor
-          {:ok, load} -> ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, load)
-          {:error, reason} -> Logger.warn(reason)
-          :nothing -> nil
+          {:ok, body, url} ->
+            ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
+
+          {:error, reason} ->
+            Logger.warn(reason)
+
+          :nothing ->
+            nil
         end
 
         loop(Map.get(config, "interval"))
