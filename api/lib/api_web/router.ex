@@ -12,7 +12,7 @@ defmodule ApiWeb.Router do
     scope "/v1", V1, as: :v1 do
       resources "/users", UserController, except: [:edit, :new]
       resources "/tasks", TaskController, except: [:edit, :new]
-      resources "/task_results", Task.ResultController, only: [:index, :show]
+      resources "/task_results", Task.ResultController, only: [:index, :show, :delete]
 
       scope "/tasks", Task, as: :task do
         resources "/:task_id/results", ResultController, only: [:index]

@@ -21,6 +21,17 @@ defmodule ApiWeb.V1.Task.ResultController do
     end
   end
 
+  def delete(conn, %{"id" => id}) do
+    case Repo.get(Result, id) do
+      nil ->
+        Plug.Conn.send_resp(conn, 404, "Not found")
+
+      result ->
+        Repo.delete(result)
+        json(conn, result)
+    end
+  end
+
   defp maybe_task_id_filter(query, params) do
     case Map.fetch(params, "task_id") do
       {:ok, task_id} -> where(query, task_id: ^task_id)
