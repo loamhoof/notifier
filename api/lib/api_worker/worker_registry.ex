@@ -62,7 +62,7 @@ defmodule ApiWorker.WorkerRegistry do
 
     workers = Map.put(workers, task_name, {version, pid})
 
-    {:reply, :ok, workers}
+    {:reply, :ok, workers, 500}
   end
 
   @impl true
@@ -71,13 +71,18 @@ defmodule ApiWorker.WorkerRegistry do
 
     GenServer.stop(pid)
 
-    {:reply, :ok, workers}
+    {:reply, :ok, workers, 500}
   end
 
   @impl true
   def handle_cast({:update, task_name, pid}, workers) do
     workers = Map.update!(workers, task_name, fn {version, _} -> {version, pid} end)
 
-    {:noreply, workers}
+    {:noreply, workers, 500}
+  end
+
+  @impl true
+  def handle_info(:timeout, state) do
+    {:noreply, state, :hibernate}
   end
 end

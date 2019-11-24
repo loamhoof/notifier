@@ -11,8 +11,8 @@ defmodule ApiWorker.Supervisor do
       {ApiWorker.WorkerRegistry, name: ApiWorker.WorkerRegistry},
       {ApiWorker.ConfigReloader, name: ApiWorker.ConfigReloader},
       {ApiWorker.ResultManager, name: ApiWorker.ResultManager},
-      {ApiWorker.NotificationSender, name: ApiWorker.NotificationSender},
-      {ApiWorker.ErrorReporter, name: ApiWorker.ErrorReporter}
+      {ApiWorker.NotificationSender, name: ApiWorker.NotificationSender}
+      # {ApiWorker.ErrorReporter, name: ApiWorker.ErrorReporter}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)

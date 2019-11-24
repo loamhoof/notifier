@@ -39,7 +39,7 @@ defmodule ApiWorker.Worker do
 
       @impl true
       def handle_call(:info, _from, {task_name, version, _} = state) do
-        {:reply, {task_name, version}, state}
+        {:reply, {task_name, version}, state, :hibernate}
       end
 
       @impl true
@@ -58,7 +58,7 @@ defmodule ApiWorker.Worker do
 
         loop(Map.get(config, "interval"))
 
-        {:noreply, state}
+        {:noreply, state, :hibernate}
       end
 
       @impl true
@@ -71,7 +71,7 @@ defmodule ApiWorker.Worker do
       @impl true
       def handle_info(msg, state) do
         Logger.warn("Unexpected message: #{inspect(msg)}")
-        {:noreply, state}
+        {:noreply, state, :hibernate}
       end
     end
   end

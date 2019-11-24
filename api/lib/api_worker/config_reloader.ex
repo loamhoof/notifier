@@ -51,6 +51,6 @@ defmodule ApiWorker.ConfigReloader do
 
     loop()
 
-    {:noreply, nil}
+    {:noreply, nil, :hibernate}
   end
 end

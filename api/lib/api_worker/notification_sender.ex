@@ -67,7 +67,7 @@ defmodule ApiWorker.NotificationSender do
 
     loop()
 
-    {:noreply, state}
+    {:noreply, state, :hibernate}
   end
 
   @spec notify(ApiWorker.Notification.t(), atom) :: :ok | {:error, iodata}
