@@ -76,7 +76,7 @@ defmodule ApiWorker.NotificationSender do
   end
 
   def notify_log(notif) do
-    Logger.info(Enum.join(["bullet"] ++ Tuple.to_list(notif), " "))
+    Logger.info(Enum.join(["notif:"] ++ Tuple.to_list(notif), " "))
 
     :ok
   end
