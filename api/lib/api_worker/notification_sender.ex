@@ -42,7 +42,7 @@ defmodule ApiWorker.NotificationSender do
           join: t in Task,
           on: r.task_id == t.id,
           select: {t, r},
-          where: r.sent == false
+          where: is_nil(r.sent_at)
       )
 
     for {task, result} <- results do
@@ -57,7 +57,7 @@ defmodule ApiWorker.NotificationSender do
         :ok ->
           now = DateTime.utc_now() |> DateTime.truncate(:second)
 
-          change(result, %{sent: true, sent_at: now})
+          change(result, %{sent_at: now})
           |> Repo.update()
 
         {:error, reason} ->
