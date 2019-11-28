@@ -18,7 +18,7 @@ defmodule ApiWorker.Worker.SwitchDiscount do
     case HTTPoison.get(url) do
       {:ok, %{body: body, status_code: 200}} -> {:ok, body}
       {:ok, resp} -> {:error, "error contacting Nintendo's API: #{inspect(resp)}}"}
-      {:error, error} -> {:error, error}
+      {:error, error} -> {:error, inspect(error)}
     end
   end
 
