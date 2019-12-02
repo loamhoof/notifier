@@ -12,7 +12,7 @@ defmodule Api.Task do
     timestamps()
   end
 
-  @types ~w|rss switch_discount|
+  @types ~w|rss switch_discount reminder|
 
   def changeset(task, attrs) do
     task
@@ -31,6 +31,7 @@ defmodule Api.Task do
     case type do
       "rss" -> Api.Task.Config.RSS.validate_config(changeset, config)
       "switch_discount" -> Api.Task.Config.SwitchDiscount.validate_config(changeset, config)
+      "reminder" -> Api.Task.Config.Reminder.validate_config(changeset, config)
       _ -> changeset
     end
   end

@@ -28,16 +28,16 @@ defmodule Api.Task.Config do
     |> validate_binary(patch, "replacement")
   end
 
-  def validate_interval(changeset, config) do
-    case Map.fetch(config, "interval") do
+  def validate_duration(changeset, config, field) do
+    case Map.fetch(config, field) do
       :error ->
-        add_error(changeset, :config, "missing interval")
+        add_error(changeset, :config, "missing #{field}")
 
-      {:ok, interval} when not is_integer(interval) ->
-        add_error(changeset, :config, "interval should be an integer")
+      {:ok, value} when not is_integer(value) ->
+        add_error(changeset, :config, "#{field} should be an integer")
 
-      {:ok, interval} when interval <= 0 ->
-        add_error(changeset, :config, "interval should be a positive integer")
+      {:ok, value} when value <= 0 ->
+        add_error(changeset, :config, "#{field} should be a positive integer")
 
       _ ->
         changeset
