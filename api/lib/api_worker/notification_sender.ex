@@ -36,13 +36,15 @@ defmodule ApiWorker.NotificationSender do
 
   @impl true
   def handle_info(:notify, state = %{mode: mode}) do
+    now = DateTime.utc_now()
+
     results =
       Repo.all(
         from r in Result,
           join: t in Task,
           on: r.task_id == t.id,
           select: {t, r},
-          where: is_nil(r.sent_at)
+          where: is_nil(r.sent_at) and r.notify_at >= ^now
       )
 
     for {task, result} <- results do

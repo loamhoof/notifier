@@ -1,7 +1,8 @@
 defmodule ApiWorker.Worker do
   @callback run(map()) ::
-              {:ok, body :: String.t(), url :: String.t()}
-              | :nothing
+              :nothing
+              | {:ok, body :: String.t(), url :: String.t()}
+              | {:ok, body :: String.t(), url :: String.t(), notify_at :: DateTime.t()}
               | {:error, reason :: String.t()}
 
   ## Client API
@@ -48,6 +49,9 @@ defmodule ApiWorker.Worker do
           # send to load processor
           {:ok, body, url} ->
             ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
+
+          {:ok, body, url, notify_at} ->
+            ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url, notify_at)
 
           {:error, reason} ->
             Logger.warn(reason)
