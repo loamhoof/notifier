@@ -9,7 +9,7 @@ defmodule ApiWorker.Worker.SwitchDiscount do
          {:ok, body} <- Jason.decode(body) do
       to_notif(body, link)
     else
-      {:error, reason} -> {:error, reason}
+      {:error, reason} -> {:error, "#{inspect(reason)}"}
       anything -> {:error, "unexpected error: #{inspect(anything)}"}
     end
   end
@@ -18,7 +18,7 @@ defmodule ApiWorker.Worker.SwitchDiscount do
     case HTTPoison.get(url) do
       {:ok, %{body: body, status_code: 200}} -> {:ok, body}
       {:ok, resp} -> {:error, "error contacting Nintendo's API: #{inspect(resp)}}"}
-      {:error, error} -> {:error, inspect(error)}
+      {:error, error} -> {:error, error}
     end
   end
 
