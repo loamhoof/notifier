@@ -12,8 +12,13 @@ defmodule ApiWorker.ResultManager do
 
   ## Client API
 
+  def last_result(server, task_name) do
+    GenServer.call(server, {:last_result, task_name})
+  end
+
   def push(server, task_name, body, url) do
-    GenServer.cast(server, {:push, task_name, body, url})
+    notify_at = DateTime.utc_now() |> DateTime.truncate(:second)
+    GenServer.cast(server, {:push, task_name, body, url, notify_at})
   end
 
   def push(server, task_name, body, url, notify_at) do
@@ -26,18 +31,26 @@ defmodule ApiWorker.ResultManager do
   def init(:ok), do: {:ok, nil}
 
   @impl true
-  def handle_cast({:push, task_name, body, url}, nil) do
-    notify_at = DateTime.utc_now()
-    save_result(task_name, body, url, notify_at)
+  def handle_call({:last_result, task_name}, _from, state) do
+    last_result =
+      Repo.one(
+        from r in Result,
+          join: t in Task,
+          on: r.task_id == t.id,
+          select: {r.body, r.url, r.acked_at},
+          where: t.name == ^task_name,
+          order_by: [desc: t.id],
+          limit: 1
+      )
 
-    {:noreply, nil}
+    {:reply, last_result, state}
   end
 
   @impl true
-  def handle_cast({:push, task_name, body, url, notify_at}, nil) do
+  def handle_cast({:push, task_name, body, url, notify_at}, state) do
     save_result(task_name, body, url, notify_at)
 
-    {:noreply, nil}
+    {:noreply, state}
   end
 
   defp save_result(task_name, body, url, notify_at) do
@@ -45,31 +58,20 @@ defmodule ApiWorker.ResultManager do
       Repo.one(
         from t in Task,
           select: t.id,
-          where: [name: ^task_name]
+          where: t.name == ^task_name
       )
 
     if is_nil(task_id) do
       Logger.warn("Could not find task #{task_name}")
     else
-      new_result = %Result{
+      result = %Result{
         task_id: task_id,
         body: body,
         url: url,
         notify_at: notify_at
       }
 
-      last_result =
-        Repo.one(
-          from Result,
-            where: [task_id: ^task_id],
-            order_by: [desc: :id],
-            limit: 1
-        )
-
-      unless !is_nil(last_result) && new_result.body == last_result.body &&
-               new_result.url == last_result.url do
-        Repo.insert(new_result)
-      end
+      Repo.insert(result)
     end
   end
 end

@@ -2,7 +2,7 @@ defmodule ApiWorker.Worker.Reminder do
   use ApiWorker.Worker
 
   @impl true
-  def run(%{"description" => description} = config) do
-    {:ok, description, ""}
+  def run(%{"description" => _description}, _last_result) do
+    :nothing
   end
 end

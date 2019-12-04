@@ -1,5 +1,9 @@
 defmodule ApiWorker.Worker do
-  @callback run(map()) ::
+  @callback run(
+              config :: map(),
+              last_result ::
+                nil | {body :: String.t(), url :: String.t(), acked_at :: DateTime.t()}
+            ) ::
               :nothing
               | {:ok, body :: String.t(), url :: String.t()}
               | {:ok, body :: String.t(), url :: String.t(), notify_at :: DateTime.t()}
@@ -26,43 +30,59 @@ defmodule ApiWorker.Worker do
       ## Defining GenServer Callbacks
 
       @impl true
-      def init({task_name, _, config} = state) do
-        ApiWorker.WorkerRegistry.register(ApiWorker.WorkerRegistry, task_name)
-
+      def init({task_name, _, _} = init_state) do
         Logger.debug("Start #{task_name}")
 
-        send(self(), :check)
-
-        {:ok, state}
+        {:ok, init_state, {:continue, nil}}
       end
 
       defp loop(interval), do: Process.send_after(self(), :check, interval)
 
       @impl true
-      def handle_call(:info, _from, {task_name, version, _} = state) do
+      def handle_continue(nil, {task_name, _, _} = init_state) do
+        last_result = ApiWorker.WorkerRegistry.register(ApiWorker.WorkerRegistry, task_name)
+
+        send(self(), :check)
+
+        {:noreply, {init_state, last_result}}
+      end
+
+      @impl true
+      def handle_call(:info, _from, {{task_name, version, _}, _} = state) do
         {:reply, {task_name, version}, state, :hibernate}
       end
 
       @impl true
-      def handle_info(:check, {task_name, _, config} = state) do
-        case run(config) do
-          # send to load processor
-          {:ok, body, url} ->
-            ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
+      def handle_info(:check, {{task_name, _, config}, last_result} = state) do
+        new_last_result =
+          case run(config, last_result) do
+            # send to load processor
+            {:ok, body, url} ->
+              ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
+              {body, url, nil}
 
-          {:ok, body, url, notify_at} ->
-            ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url, notify_at)
+            {:ok, body, url, notify_at} ->
+              ApiWorker.ResultManager.push(
+                ApiWorker.ResultManager,
+                task_name,
+                body,
+                url,
+                notify_at
+              )
 
-          {:error, reason} ->
-            Logger.warn(reason)
+              {body, url, nil}
 
-          :nothing ->
-            nil
-        end
+            {:error, reason} ->
+              Logger.warn(reason)
+              last_result
+
+            :nothing ->
+              last_result
+          end
 
         loop(Map.get(config, "interval"))
 
-        {:noreply, state, :hibernate}
+        {:noreply, put_elem(state, 1, new_last_result), :hibernate}
       end
 
       @impl true
@@ -76,6 +96,24 @@ defmodule ApiWorker.Worker do
       def handle_info(msg, state) do
         Logger.warn("Unexpected message: #{inspect(msg)}")
         {:noreply, state, :hibernate}
+      end
+
+      ## Helpers
+
+      defp if_diff(notif, nil), do: notif
+
+      defp if_diff(notif, {last_body, last_url, _}) do
+        case notif do
+          {:ok, new_body, new_url} ->
+            if new_body == last_body and new_url == last_url do
+              :nothing
+            else
+              {:ok, new_body, new_url}
+            end
+
+          anything ->
+            anything
+        end
       end
     end
   end

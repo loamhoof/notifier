@@ -2,12 +2,12 @@ defmodule ApiWorker.Worker.RSS do
   use ApiWorker.Worker
 
   @impl true
-  def run(%{"feed" => feed} = config) do
+  def run(%{"feed" => feed} = config, last_result) do
     filters = Map.get(config, "filters", [])
 
     with {:ok, %{items: items}} <- Scrape.feed(feed),
          item when not is_nil(item) <- find(items, filters) do
-      to_notif(item)
+      to_notif(item) |> if_diff(last_result)
     else
       nil -> :nothing
       {:ok, %{items: []}} -> {:error, "empty feed"}

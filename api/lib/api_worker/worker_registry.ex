@@ -20,13 +20,14 @@ defmodule ApiWorker.WorkerRegistry do
   end
 
   def register(server, task_name) do
-    GenServer.cast(server, {:update, task_name, self()})
+    GenServer.call(server, {:register, task_name, self()})
   end
 
   def which_module(type) do
     case type do
       "rss" -> ApiWorker.Worker.RSS
       "switch_discount" -> ApiWorker.Worker.SwitchDiscount
+      "reminder" -> ApiWorker.Worker.Reminder
     end
   end
 
@@ -75,10 +76,12 @@ defmodule ApiWorker.WorkerRegistry do
   end
 
   @impl true
-  def handle_cast({:update, task_name, pid}, workers) do
+  def handle_call({:register, task_name, pid}, _from, workers) do
     workers = Map.update!(workers, task_name, fn {version, _} -> {version, pid} end)
 
-    {:noreply, workers, 500}
+    last_result = ApiWorker.ResultManager.last_result(ApiWorker.ResultManager, task_name)
+
+    {:reply, last_result, workers, 500}
   end
 
   @impl true

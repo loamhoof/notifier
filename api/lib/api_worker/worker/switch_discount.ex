@@ -2,12 +2,12 @@ defmodule ApiWorker.Worker.SwitchDiscount do
   use ApiWorker.Worker
 
   @impl true
-  def run(%{"country" => country, "id" => id, "link" => link}) do
+  def run(%{"country" => country, "id" => id, "link" => link}, last_result) do
     url = "https://api.ec.nintendo.com/v1/price?country=#{country}&lang=en&ids=#{id}"
 
     with {:ok, body} <- get(url),
          {:ok, body} <- Jason.decode(body) do
-      to_notif(body, link)
+      to_notif(body, link) |> if_diff(last_result)
     else
       {:error, reason} -> {:error, "#{inspect(reason)}"}
       anything -> {:error, "unexpected error: #{inspect(anything)}"}
