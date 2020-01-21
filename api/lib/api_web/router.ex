@@ -16,6 +16,7 @@ defmodule ApiWeb.Router do
 
       scope "/tasks", Task, as: :task do
         resources "/:task_id/results", ResultController, only: [:index]
+        resources "/:task_id/ack", AckController, only: [:create]
       end
     end
   end

@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react';
+import firebase from 'react-native-firebase';
 
 import Task from './components/task';
 import Tasks from './components/tasks';
@@ -9,6 +10,17 @@ const ROUTER = {
     tasks: Tasks,
     newTask: NewTask,
 };
+
+(async() => {
+    const enabled = await firebase.messaging().hasPermission();
+    if (!enabled) {
+        await firebase.messaging().requestPermission();
+    }
+
+    const token = await firebase.messaging().getToken();
+
+    console.log(`FCM Token: ${token}`);
+})();
 
 export default class App extends PureComponent {
     state = {
