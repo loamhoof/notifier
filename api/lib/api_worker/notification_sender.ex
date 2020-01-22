@@ -20,7 +20,7 @@ defmodule ApiWorker.NotificationSender do
         {:ok, mode} -> mode
       end
 
-    unless mode in [:log, :bullet] do
+    unless mode in [:log, :bullet, :fcm_legacy] do
       error_reason = "invalid notification_mode: #{inspect(mode)}"
       Logger.error(error_reason)
 
@@ -44,7 +44,7 @@ defmodule ApiWorker.NotificationSender do
           join: t in Task,
           on: r.task_id == t.id,
           select: {t, r},
-          where: is_nil(r.sent_at) and r.notify_at >= ^now
+          where: is_nil(r.sent_at) and r.notify_at <= ^now
       )
 
     for {task, result} <- results do
@@ -63,7 +63,9 @@ defmodule ApiWorker.NotificationSender do
           |> Repo.update()
 
         {:error, reason} ->
-          Logger.warn("could not send bullet [#{task.name} / #{result.id}]: #{inspect(reason)}")
+          Logger.warn(
+            "could not send notification [#{task.name} / #{result.id}]: #{inspect(reason)}"
+          )
       end
     end
 
@@ -85,6 +87,19 @@ defmodule ApiWorker.NotificationSender do
 
   def notify_bullet(notif) do
     case ApiWorker.Pushbullet.push(notif) do
+      {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
+        :ok
+
+      {:ok, %{status_code: status_code}} ->
+        {:error, "unexpected status code when notifying: #{status_code}"}
+
+      anything ->
+        {:error, "error when notifying: #{inspect(anything)}"}
+    end
+  end
+
+  def notify_fcm_legacy(notif) do
+    case ApiWorker.FCMLegacy.push(notif) do
       {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
         :ok
 

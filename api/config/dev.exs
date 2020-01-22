@@ -57,6 +57,16 @@ config :phoenix, :stacktrace_depth, 20
 # Initialize plugs at runtime for faster development compilation
 config :phoenix, :plug_init_mode, :runtime
 
+config :api, :notification_mode, :log
+
 config :api,
        :pushbullet_token,
        File.read!("/home/loam/.pushbullet") |> String.trim_trailing()
+
+config :api,
+       :fcm_server_key,
+       File.read!("/home/loam/.firebase/.server_key") |> String.trim_trailing()
+
+config :api,
+       :fcm_device_token,
+       File.read!("/home/loam/.firebase/.device_token") |> String.trim_trailing()
