@@ -39,7 +39,7 @@ defmodule ApiWorker.ResultManager do
           on: r.task_id == t.id,
           select: {r.body, r.url, r.acked_at},
           where: t.name == ^task_name,
-          order_by: [desc: t.id],
+          order_by: [desc: r.id],
           limit: 1
       )
 
