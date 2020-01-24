@@ -2,12 +2,12 @@ defmodule ApiWorker.Worker.Reminder do
   use ApiWorker.Worker
 
   @impl true
-  def run(%{"description" => description}, last_result) do
+  def run(%{"description" => description, "every" => every}, last_result) do
     notify_at =
       case last_result do
         {_, _, nil} -> nil
-        nil -> DateTime.utc_now() |> DateTime.truncate(:second) |> next(20)
-        {_, _, acked_at} -> acked_at |> next(20)
+        nil -> DateTime.utc_now() |> DateTime.truncate(:second) |> next(every)
+        {_, _, acked_at} -> acked_at |> next(every)
       end
 
     case notify_at do
