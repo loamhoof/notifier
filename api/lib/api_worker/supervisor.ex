@@ -9,6 +9,7 @@ defmodule ApiWorker.Supervisor do
     children = [
       {DynamicSupervisor, name: ApiWorker.WorkerSupervisor, strategy: :one_for_one},
       {ApiWorker.WorkerRegistry, name: ApiWorker.WorkerRegistry},
+      {ApiWorker.EventManager, name: ApiWorker.EventManager},
       {ApiWorker.ConfigReloader, name: ApiWorker.ConfigReloader},
       {ApiWorker.ResultManager, name: ApiWorker.ResultManager},
       {ApiWorker.NotificationSender, name: ApiWorker.NotificationSender}

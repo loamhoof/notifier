@@ -6,11 +6,11 @@ defmodule ApiWeb.V1.Task.AckController do
 
   alias Api.{Repo, Task.Result}
 
-  def create(conn, %{"task_id" => id}) do
+  def create(conn, %{"task_id" => task_id}) do
     last_result =
       Repo.one(
         from r in Result,
-          where: r.task_id == ^id,
+          where: r.task_id == ^task_id,
           order_by: [desc: r.id],
           limit: 1
       )
@@ -28,6 +28,7 @@ defmodule ApiWeb.V1.Task.AckController do
 
       case result do
         {:ok, last_result} ->
+          ApiWorker.EventManager.ack(ApiWorker.EventManager, task_id, now)
           json(conn, last_result)
 
         {:error, %{errors: errors}} ->

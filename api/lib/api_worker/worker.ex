@@ -15,6 +15,10 @@ defmodule ApiWorker.Worker do
     GenServer.call(server, :info)
   end
 
+  def ack(server, acked_at) do
+    GenServer.cast(server, {:ack, acked_at})
+  end
+
   defmacro __using__(_) do
     quote do
       use GenServer, restart: :transient
@@ -27,7 +31,7 @@ defmodule ApiWorker.Worker do
         GenServer.start_link(__MODULE__, init_state)
       end
 
-      ## Defining GenServer Callbacks
+      ## GenServer Callbacks
 
       @impl true
       def init({task_name, _, _} = init_state) do
@@ -50,6 +54,13 @@ defmodule ApiWorker.Worker do
       @impl true
       def handle_call(:info, _from, {{task_name, version, _}, _} = state) do
         {:reply, {task_name, version}, state, :hibernate}
+      end
+
+      @impl true
+      def handle_cast({:ack, acked_at}, {task_info, last_result}) do
+        new_last_result = put_elem(last_result, 2, acked_at)
+
+        {:noreply, {task_info, new_last_result}}
       end
 
       @impl true

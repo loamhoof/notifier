@@ -23,6 +23,10 @@ defmodule ApiWorker.WorkerRegistry do
     GenServer.call(server, {:register, task_name, self()})
   end
 
+  def on_task_ack(server, task_name, acked_at) do
+    GenServer.cast(server, {:send_ack, task_name, acked_at})
+  end
+
   def which_module(type) do
     case type do
       "rss" -> ApiWorker.Worker.RSS
@@ -82,6 +86,19 @@ defmodule ApiWorker.WorkerRegistry do
     last_result = ApiWorker.ResultManager.last_result(ApiWorker.ResultManager, task_name)
 
     {:reply, last_result, workers, 500}
+  end
+
+  @impl true
+  def handle_cast({:send_ack, task_name, acked_at}, workers) do
+    worker_info = Map.get(workers, task_name)
+
+    unless is_nil(worker_info) do
+      {_, worker_pid} = worker_info
+
+      ApiWorker.Worker.ack(worker_pid, acked_at)
+    end
+
+    {:noreply, workers, 500}
   end
 
   @impl true
