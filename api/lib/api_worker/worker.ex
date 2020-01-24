@@ -97,7 +97,7 @@ defmodule ApiWorker.Worker do
       end
 
       @impl true
-      def terminate(_reason, {task_name, _, _}) do
+      def terminate(_reason, {{task_name, _, _}, _}) do
         Logger.debug("Stop #{task_name}")
 
         :shutdown
