@@ -39,6 +39,7 @@ defmodule Api.MixProject do
       {:gettext, "~> 0.11"},
       {:jason, "~> 1.0"},
       {:httpoison, "~> 1.5", override: true},
+      {:morphix, "~> 0.8.0", override: true},
       {:phoenix, "~> 1.4.9"},
       {:phoenix_ecto, "~> 4.0"},
       {:phoenix_pubsub, "~> 1.1"},
