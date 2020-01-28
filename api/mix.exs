@@ -42,7 +42,6 @@ defmodule Api.MixProject do
       {:morphix, "~> 0.8.0", override: true},
       {:phoenix, "~> 1.4.9"},
       {:phoenix_ecto, "~> 4.0"},
-      {:phoenix_pubsub, "~> 1.1"},
       {:plug_cowboy, "~> 2.0"},
       {:postgrex, ">= 0.0.0"},
       {:scrape, "~> 3.0.0"}
