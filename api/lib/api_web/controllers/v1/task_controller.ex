@@ -11,7 +11,7 @@ defmodule ApiWeb.V1.TaskController do
 
   def show(conn, %{"id" => id}) do
     case Repo.get(Task, id) do
-      nil -> Plug.Conn.send_resp(conn, 404, "Not found")
+      nil -> send_resp(conn, 404, "Not found")
       task -> json(conn, task)
     end
   end
@@ -28,7 +28,7 @@ defmodule ApiWeb.V1.TaskController do
 
       {:error, %{errors: errors}} ->
         conn
-        |> Plug.Conn.put_status(400)
+        |> put_status(400)
         |> json(errors)
     end
   end
@@ -51,7 +51,7 @@ defmodule ApiWeb.V1.TaskController do
 
       {:error, %{errors: errors}} ->
         conn
-        |> Plug.Conn.put_status(400)
+        |> put_status(400)
         |> json(errors)
     end
   end
@@ -59,7 +59,7 @@ defmodule ApiWeb.V1.TaskController do
   def delete(conn, %{"id" => id}) do
     case Repo.get(Task, id) do
       nil ->
-        Plug.Conn.send_resp(conn, 404, "Not found")
+        send_resp(conn, 404, "Not found")
 
       task ->
         Repo.delete(task)

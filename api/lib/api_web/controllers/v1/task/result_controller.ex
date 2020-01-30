@@ -16,7 +16,7 @@ defmodule ApiWeb.V1.Task.ResultController do
 
   def show(conn, %{"id" => id}) do
     case Repo.get(Result, id) do
-      nil -> Plug.Conn.send_resp(conn, 404, "Not found")
+      nil -> send_resp(conn, 404, "Not found")
       result -> json(conn, result)
     end
   end
@@ -24,7 +24,7 @@ defmodule ApiWeb.V1.Task.ResultController do
   def delete(conn, %{"id" => id}) do
     case Repo.get(Result, id) do
       nil ->
-        Plug.Conn.send_resp(conn, 404, "Not found")
+        send_resp(conn, 404, "Not found")
 
       result ->
         Repo.delete(result)

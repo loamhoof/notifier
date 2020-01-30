@@ -18,22 +18,22 @@ defmodule ApiWeb.V1.Task.AckController do
     cond do
       is_nil(last_result) ->
         conn
-        |> Plug.Conn.put_status(400)
+        |> put_status(400)
         |> json(%{"message" => "No result yet"})
 
       not last_result.to_ack ->
         conn
-        |> Plug.Conn.put_status(400)
+        |> put_status(400)
         |> json(%{"message" => "Nothing to ack"})
 
       not is_nil(last_result.acked_at) ->
         conn
-        |> Plug.Conn.put_status(400)
+        |> put_status(400)
         |> json(%{"message" => "Already acked"})
 
       is_nil(last_result.sent_at) ->
         conn
-        |> Plug.Conn.put_status(400)
+        |> put_status(400)
         |> json(%{"message" => "Cannot ack a result which has not been sent yet"})
 
       true ->
@@ -50,7 +50,7 @@ defmodule ApiWeb.V1.Task.AckController do
 
           {:error, %{errors: errors}} ->
             conn
-            |> Plug.Conn.put_status(400)
+            |> put_status(400)
             |> json(errors)
         end
     end
