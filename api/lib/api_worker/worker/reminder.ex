@@ -1,5 +1,5 @@
 defmodule ApiWorker.Worker.Reminder do
-  use ApiWorker.Worker
+  @behaviour ApiWorker.Worker
 
   @impl true
   def run(%{"description" => description, "every" => every}, last_result) do

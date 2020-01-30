@@ -1,5 +1,7 @@
 defmodule ApiWorker.Worker.SwitchDiscount do
-  use ApiWorker.Worker
+  @behaviour ApiWorker.Worker
+
+  import ApiWorker.Worker, only: [if_diff: 2]
 
   @impl true
   def run(%{"country" => country, "id" => id, "link" => link}, last_result) do

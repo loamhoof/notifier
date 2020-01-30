@@ -27,14 +27,6 @@ defmodule ApiWorker.WorkerRegistry do
     GenServer.cast(server, {:send_ack, task_name, acked_at})
   end
 
-  def which_module(type) do
-    case type do
-      "rss" -> ApiWorker.Worker.RSS
-      "switch_discount" -> ApiWorker.Worker.SwitchDiscount
-      "reminder" -> ApiWorker.Worker.Reminder
-    end
-  end
-
   ## Defining GenServer Callbacks
 
   @impl true
@@ -56,13 +48,11 @@ defmodule ApiWorker.WorkerRegistry do
   end
 
   @impl true
-  def handle_call({:new, task_name, version, type, config}, _from, workers) do
-    module = which_module(type)
-
+  def handle_call({:new, task_name, version, task_type, config}, _from, workers) do
     {:ok, pid} =
       DynamicSupervisor.start_child(
         ApiWorker.WorkerSupervisor,
-        {module, {task_name, version, config}}
+        {ApiWorker.Worker, {task_type, {task_name, version, config}}}
       )
 
     workers = Map.put(workers, task_name, {version, pid})

@@ -1,5 +1,7 @@
 defmodule ApiWorker.Worker.RSS do
-  use ApiWorker.Worker
+  @behaviour ApiWorker.Worker
+
+  import ApiWorker.Worker, only: [if_diff: 2]
 
   @impl true
   def run(%{"feed" => feed} = config, last_result) do
