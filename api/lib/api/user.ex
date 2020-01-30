@@ -1,7 +1,7 @@
 defmodule Api.User do
   use Ecto.Schema
   import Ecto.Changeset
-  @derive {Jason.Encoder, only: [:id, :name, :is_admin]}
+  @derive {Jason.Encoder, only: [:id, :name, :is_admin, :inserted_at, :updated_at]}
 
   schema "users" do
     field :name, :string

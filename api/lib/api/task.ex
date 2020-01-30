@@ -2,7 +2,7 @@ defmodule Api.Task do
   use Ecto.Schema
   import Ecto.Changeset
 
-  @derive {Jason.Encoder, only: [:id, :name, :type, :config, :inserted_at]}
+  @derive {Jason.Encoder, only: [:id, :name, :type, :config, :inserted_at, :updated_at]}
 
   schema "tasks" do
     field :name, :string

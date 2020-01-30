@@ -11,7 +11,8 @@ defmodule Api.Task.Result do
              :sent_at,
              :to_ack,
              :acked_at,
-             :inserted_at
+             :inserted_at,
+             :updated_at
            ]}
 
   schema "task_results" do
