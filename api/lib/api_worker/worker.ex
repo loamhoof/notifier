@@ -6,7 +6,8 @@ defmodule ApiWorker.Worker do
             ) ::
               :nothing
               | {:ok, body :: String.t(), url :: String.t()}
-              | {:ok, body :: String.t(), url :: String.t(), notify_at :: DateTime.t()}
+              | {:ok, body :: String.t(), url :: String.t(),
+                 [notify_at: DateTime.t(), to_ack: boolean()]}
               | {:error, reason :: String.t()}
 
   require Logger
@@ -75,13 +76,13 @@ defmodule ApiWorker.Worker do
           ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
           {body, url, nil}
 
-        {:ok, body, url, notify_at} ->
+        {:ok, body, url, opts} ->
           ApiWorker.ResultManager.push(
             ApiWorker.ResultManager,
             task_name,
             body,
             url,
-            notify_at
+            opts
           )
 
           {body, url, nil}
@@ -118,12 +119,8 @@ defmodule ApiWorker.Worker do
 
   def if_diff(notif, {last_body, last_url, _}) do
     case notif do
-      {:ok, new_body, new_url} ->
-        if new_body == last_body and new_url == last_url do
-          :nothing
-        else
-          {:ok, new_body, new_url}
-        end
+      {:ok, new_body, new_url} when {new_body, new_url} == {last_body, last_url} ->
+        :nothing
 
       anything ->
         anything

@@ -21,6 +21,11 @@ defmodule ApiWeb.V1.Task.AckController do
         |> Plug.Conn.put_status(400)
         |> json(%{"message" => "No result yet"})
 
+      not last_result.to_ack ->
+        conn
+        |> Plug.Conn.put_status(400)
+        |> json(%{"message" => "Nothing to ack"})
+
       not is_nil(last_result.acked_at) ->
         conn
         |> Plug.Conn.put_status(400)

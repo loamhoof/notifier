@@ -12,7 +12,7 @@ defmodule ApiWorker.Worker.Reminder do
 
     case notify_at do
       nil -> :nothing
-      _ -> {:ok, description, "", notify_at}
+      _ -> {:ok, description, "", notify_at: notify_at, to_ack: true}
     end
   end
 
