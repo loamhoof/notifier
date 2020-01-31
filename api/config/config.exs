@@ -1,19 +1,7 @@
-# This file is responsible for configuring your application
-# and its dependencies with the aid of the Mix.Config module.
-#
-# This configuration file is loaded before any dependency and
-# is restricted to this project.
-
-# General application configuration
-use Mix.Config
+import Config
 
 config :api,
   ecto_repos: [Api.Repo]
-
-# Configures the endpoint
-config :api, ApiWeb.Endpoint,
-  url: [host: "localhost"],
-  secret_key_base: "NmRGcz40N4cGn6tCTlCN4upu0+Dyf1zFe+9flNFgmafr+f4ltT8R2c9zR3nbh4ew"
 
 # Configures Elixir's Logger
 config :logger, :console,

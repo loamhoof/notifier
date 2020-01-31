@@ -1,0 +1,25 @@
+version: '3'
+services:
+  api:
+    container_name: notifier_api
+    image: notifier
+    links:
+      - db
+    ports:
+      - 10001:10001
+    environment:
+      HOST: localhost
+      PORT: 10001
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      DB_HOSTNAME: notifier_db
+      DB_DATABASE: notifier
+  db:
+    container_name: notifier_db
+    image: postgres:11.4-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: notifier
+    volumes:
+      - ./db:/var/lib/postgresql/data

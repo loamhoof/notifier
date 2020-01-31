@@ -1,0 +1,5 @@
+_build/
+build/db/
+db/
+deps/
+test/
