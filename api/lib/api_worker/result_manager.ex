@@ -16,8 +16,8 @@ defmodule ApiWorker.ResultManager do
     GenServer.call(server, {:last_result, task_name})
   end
 
-  def push(server, task_name, body, url, opts \\ []) do
-    GenServer.cast(server, {:push, task_name, body, url, opts})
+  def push(server, task_name, body, url) do
+    GenServer.cast(server, {:push, task_name, body, url})
   end
 
   ## Defining GenServer Callbacks
@@ -42,13 +42,13 @@ defmodule ApiWorker.ResultManager do
   end
 
   @impl true
-  def handle_cast({:push, task_name, body, url, opts}, state) do
-    save_result(task_name, body, url, opts)
+  def handle_cast({:push, task_name, body, url}, state) do
+    save_result(task_name, body, url)
 
     {:noreply, state}
   end
 
-  defp save_result(task_name, body, url, opts) do
+  defp save_result(task_name, body, url) do
     task_id =
       Repo.one(
         from t in Task,
@@ -62,10 +62,7 @@ defmodule ApiWorker.ResultManager do
       result = %Result{
         task_id: task_id,
         body: body,
-        url: url,
-        notify_at:
-          Keyword.get(opts, :notify_at, DateTime.utc_now() |> DateTime.truncate(:second)),
-        to_ack: Keyword.get(opts, :to_ack, false)
+        url: url
       }
 
       Repo.insert(result)

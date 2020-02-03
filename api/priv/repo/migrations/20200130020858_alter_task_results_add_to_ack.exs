@@ -1,4 +1,4 @@
-defmodule Api.Repo.Migrations.AlertTaskResultsAddToAck do
+defmodule Api.Repo.Migrations.AlterTaskResultsAddToAck do
   use Ecto.Migration
 
   def change do

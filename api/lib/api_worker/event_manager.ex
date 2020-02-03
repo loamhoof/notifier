@@ -15,6 +15,10 @@ defmodule ApiWorker.EventManager do
     GenServer.cast(server, {:ack, task_id, acked_at})
   end
 
+  def unack(server, task_id) do
+    GenServer.cast(server, {:unack, task_id})
+  end
+
   ## GenServer Callbacks
 
   @impl true
@@ -24,15 +28,27 @@ defmodule ApiWorker.EventManager do
 
   @impl true
   def handle_cast({:ack, task_id, acked_at}, state) do
-    task_name =
-      Repo.one(
-        from t in Task,
-          select: t.name,
-          where: t.id == ^task_id
-      )
+    task_name = task_name_from_task_id(task_id)
 
     ApiWorker.WorkerRegistry.on_task_ack(ApiWorker.WorkerRegistry, task_name, acked_at)
 
     {:noreply, state, :hibernate}
+  end
+
+  @impl true
+  def handle_cast({:unack, task_id}, state) do
+    task_name = task_name_from_task_id(task_id)
+
+    ApiWorker.WorkerRegistry.on_task_unack(ApiWorker.WorkerRegistry, task_name)
+
+    {:noreply, state, :hibernate}
+  end
+
+  defp task_name_from_task_id(task_id) do
+    Repo.one(
+      from t in Task,
+        select: t.name,
+        where: t.id == ^task_id
+    )
   end
 end

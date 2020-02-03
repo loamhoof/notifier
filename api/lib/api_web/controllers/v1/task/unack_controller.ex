@@ -1,4 +1,4 @@
-defmodule ApiWeb.V1.Task.AckController do
+defmodule ApiWeb.V1.Task.UnackController do
   use ApiWeb, :controller
 
   import Ecto.Changeset, only: [change: 2]
@@ -27,26 +27,19 @@ defmodule ApiWeb.V1.Task.AckController do
         |> put_status(400)
         |> json(%{"message" => "No result yet"})
 
-      not is_nil(task_result.acked_at) ->
+      is_nil(task_result.acked_at) ->
         conn
         |> put_status(400)
-        |> json(%{"message" => "Already acked"})
-
-      is_nil(task_result.sent_at) ->
-        conn
-        |> put_status(400)
-        |> json(%{"message" => "Cannot ack a result which has not been sent yet"})
+        |> json(%{"message" => "Not acked"})
 
       true ->
-        now = DateTime.utc_now() |> DateTime.truncate(:second)
-
         result =
-          change(task_result, %{acked_at: now})
+          change(task_result, %{acked_at: nil})
           |> Repo.update()
 
         case result do
           {:ok, task_result} ->
-            ApiWorker.EventManager.ack(ApiWorker.EventManager, task_result.task_id, now)
+            ApiWorker.EventManager.unack(ApiWorker.EventManager, task_result.task_id)
             json(conn, task_result)
 
           {:error, %{errors: errors}} ->

@@ -6,8 +6,6 @@ defmodule ApiWorker.Worker do
             ) ::
               :nothing
               | {:ok, body :: String.t(), url :: String.t()}
-              | {:ok, body :: String.t(), url :: String.t(),
-                 [notify_at: DateTime.t(), to_ack: boolean()]}
               | {:error, reason :: String.t()}
 
   require Logger
@@ -26,6 +24,10 @@ defmodule ApiWorker.Worker do
 
   def ack(server, acked_at) do
     GenServer.cast(server, {:ack, acked_at})
+  end
+
+  def unack(server) do
+    GenServer.cast(server, :unack)
   end
 
   ## GenServer Callbacks
@@ -68,23 +70,19 @@ defmodule ApiWorker.Worker do
   end
 
   @impl true
+  def handle_cast(:unack, {_, _, last_result} = state) do
+    new_last_result = put_elem(last_result, 2, nil)
+
+    {:noreply, put_elem(state, 2, new_last_result)}
+  end
+
+  @impl true
   def handle_info(:check, {module, {task_name, _, config}, last_result} = state) do
     new_last_result =
       case module.run(config, last_result) do
         # send to load processor
         {:ok, body, url} ->
           ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
-          {body, url, nil}
-
-        {:ok, body, url, opts} ->
-          ApiWorker.ResultManager.push(
-            ApiWorker.ResultManager,
-            task_name,
-            body,
-            url,
-            opts
-          )
-
           {body, url, nil}
 
         {:error, reason} ->

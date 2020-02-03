@@ -2,21 +2,19 @@ defmodule ApiWorker.Worker.Reminder do
   @behaviour ApiWorker.Worker
 
   @impl true
-  def run(%{"description" => description, "every" => every}, last_result) do
-    notify_at =
-      case last_result do
-        {_, _, nil} -> nil
-        nil -> DateTime.utc_now() |> DateTime.truncate(:second) |> next(every)
-        {_, _, acked_at} -> acked_at |> next(every)
-      end
+  def run(_config, {_, _, nil}), do: :nothing
 
-    case notify_at do
-      nil -> :nothing
-      _ -> {:ok, description, "", notify_at: notify_at, to_ack: true}
+  @impl true
+  def run(%{"description" => description}, nil), do: {:ok, description, ""}
+
+  @impl true
+  def run(%{"description" => description, "every" => every}, {_, _, acked_at}) do
+    now = DateTime.utc_now()
+    next = DateTime.add(acked_at, every)
+
+    case DateTime.compare(now, next) do
+      :gt -> {:ok, description, ""}
+      _ -> :nothing
     end
-  end
-
-  defp next(from, interval) do
-    DateTime.add(from, interval)
   end
 end

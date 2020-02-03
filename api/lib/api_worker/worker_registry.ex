@@ -27,6 +27,10 @@ defmodule ApiWorker.WorkerRegistry do
     GenServer.cast(server, {:send_ack, task_name, acked_at})
   end
 
+  def on_task_unack(server, task_name) do
+    GenServer.cast(server, {:send_unack, task_name})
+  end
+
   ## Defining GenServer Callbacks
 
   @impl true
@@ -86,6 +90,19 @@ defmodule ApiWorker.WorkerRegistry do
       {_, worker_pid} = worker_info
 
       ApiWorker.Worker.ack(worker_pid, acked_at)
+    end
+
+    {:noreply, workers, 500}
+  end
+
+  @impl true
+  def handle_cast({:send_unack, task_name}, workers) do
+    worker_info = Map.get(workers, task_name)
+
+    unless is_nil(worker_info) do
+      {_, worker_pid} = worker_info
+
+      ApiWorker.Worker.unack(worker_pid)
     end
 
     {:noreply, workers, 500}
