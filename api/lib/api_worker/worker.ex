@@ -66,14 +66,14 @@ defmodule ApiWorker.Worker do
   def handle_cast({:ack, acked_at}, {_, _, last_result} = state) do
     new_last_result = put_elem(last_result, 2, acked_at)
 
-    {:noreply, put_elem(state, 2, new_last_result)}
+    {:noreply, put_elem(state, 2, new_last_result), :hibernate}
   end
 
   @impl true
   def handle_cast(:unack, {_, _, last_result} = state) do
     new_last_result = put_elem(last_result, 2, nil)
 
-    {:noreply, put_elem(state, 2, new_last_result)}
+    {:noreply, put_elem(state, 2, new_last_result), :hibernate}
   end
 
   @impl true
@@ -93,7 +93,7 @@ defmodule ApiWorker.Worker do
           last_result
       end
 
-    loop(Map.get(config, "interval"))
+    loop(5_000)
 
     {:noreply, put_elem(state, 2, new_last_result), :hibernate}
   end
