@@ -1,11 +1,9 @@
 defmodule Api.Task.Config.SwitchDiscount do
-  @behaviour Api.Task.Config
+  import Api.Validation, only: [validate: 1]
 
-  @impl true
-  def validate_config(changeset, config) do
-    changeset
-    |> Api.Task.Config.validate_integer(config, "id")
-    |> Api.Task.Config.validate_binary(config, "country")
-    |> Api.Task.Config.validate_binary(config, "link")
+  validate do
+    integer "id", >: 0
+    string "country"
+    string "link"
   end
 end

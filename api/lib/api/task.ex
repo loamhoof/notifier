@@ -24,16 +24,15 @@ defmodule Api.Task do
   end
 
   defp validate_config(changeset) do
-    config = get_field(changeset, :config)
     type = get_field(changeset, :type)
 
-    changeset = Api.Task.Config.validate_config(changeset, config)
+    module =
+      case type do
+        "rss" -> Api.Task.Config.RSS
+        "switch_discount" -> Api.Task.Config.SwitchDiscount
+        "reminder" -> Api.Task.Config.Reminder
+      end
 
-    case type do
-      "rss" -> Api.Task.Config.RSS.validate_config(changeset, config)
-      "switch_discount" -> Api.Task.Config.SwitchDiscount.validate_config(changeset, config)
-      "reminder" -> Api.Task.Config.Reminder.validate_config(changeset, config)
-      _ -> changeset
-    end
+    Api.Task.Config.validate_config(changeset, module)
   end
 end

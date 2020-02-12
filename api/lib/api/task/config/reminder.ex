@@ -1,10 +1,8 @@
 defmodule Api.Task.Config.Reminder do
-  @behaviour Api.Task.Config
+  import Api.Validation, only: [validate: 1]
 
-  @impl true
-  def validate_config(changeset, config) do
-    changeset
-    |> Api.Task.Config.validate_duration(config, "every")
-    |> Api.Task.Config.validate_binary(config, "description")
+  validate do
+    duration "every"
+    string "description"
   end
 end
