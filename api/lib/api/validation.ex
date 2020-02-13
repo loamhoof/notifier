@@ -26,26 +26,47 @@ defmodule Api.Validation do
       end
 
     new_block =
-      Enum.map(exprs, fn {type, _, [field | args]} ->
-        validator_f = "validate_#{type}" |> String.to_atom()
+      Enum.map(exprs, fn
+        {:@, _, [{type, _, args}]} ->
+          args = if is_nil(args), do: [], else: args
 
-        unless macro_exported?(Api.Validation, validator_f, 2 + length(args)) do
-          raise "unknown type: `#{type}`"
-        end
+          validator_f = "validate_#{type}" |> String.to_atom()
 
-        quote bind_quoted: [value: value, ctx: ctx, field: field], unquote: true do
-          case Map.fetch(value, field) do
-            :error ->
-              {ctx, "no field #{field}"}
-
-            {:ok, value} ->
-              Api.Validation.unquote(validator_f)(value, ctx ++ [field], unquote_splicing(args))
+          unless macro_exported?(Api.Validation, validator_f, 2 + length(args)) do
+            raise "unknown validator: `#{type}"
           end
+
+          quote bind_quoted: [value: value, ctx: ctx], unquote: true do
+            Api.Validation.unquote(validator_f)(value, ctx, unquote_splicing(args))
+          end
+        {type, _, [field | args]} ->
+          validator_f = "validate_#{type}" |> String.to_atom()
+
+          unless macro_exported?(Api.Validation, validator_f, 2 + length(args)) do
+            raise "unknown type: `#{type}`"
+          end
+
+          quote bind_quoted: [value: value, ctx: ctx, field: field], unquote: true do
+            case Map.fetch(value, field) do
+              :error ->
+                []
+
+              {:ok, value} ->
+                Api.Validation.unquote(validator_f)(value, ctx ++ [field], unquote_splicing(args))
+            end
         end
       end)
 
     quote do
       unquote(new_block) |> List.flatten()
+    end
+  end
+
+  defmacro validate_required(value, ctx, fields) do
+    quote bind_quoted: [value: value, ctx: ctx, fields: fields] do
+      fields
+      |> Stream.filter(&Map.has_key?(value, &1))
+      |> Enum.map(&{ctx, "no field #{&1}"})
     end
   end
 
