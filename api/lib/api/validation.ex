@@ -31,30 +31,19 @@ defmodule Api.Validation do
           args = if is_nil(args), do: [], else: args
 
           validator_f = "validate_#{type}" |> String.to_atom()
+          arity = 2 + length(args)
 
-          unless macro_exported?(Api.Validation, validator_f, 2 + length(args)) do
-            raise "unknown validator: `#{type}"
+          unless macro_exported?(Api.Validation, validator_f, arity) do
+            raise "unknown validator: `#{type}/#{arity}`"
           end
 
           quote bind_quoted: [value: value, ctx: ctx], unquote: true do
             Api.Validation.unquote(validator_f)(value, ctx, unquote_splicing(args))
           end
         {type, _, [field | args]} ->
-          validator_f = "validate_#{type}" |> String.to_atom()
-
-          unless macro_exported?(Api.Validation, validator_f, 2 + length(args)) do
-            raise "unknown type: `#{type}`"
+          quote bind_quoted: [value: value, ctx: ctx], unquote: true do
+            Api.Validation.validate_field(value, ctx, unquote(field), unquote(type), unquote(args))
           end
-
-          quote bind_quoted: [value: value, ctx: ctx, field: field], unquote: true do
-            case Map.fetch(value, field) do
-              :error ->
-                []
-
-              {:ok, value} ->
-                Api.Validation.unquote(validator_f)(value, ctx ++ [field], unquote_splicing(args))
-            end
-        end
       end)
 
     quote do
@@ -65,8 +54,26 @@ defmodule Api.Validation do
   defmacro validate_required(value, ctx, fields) do
     quote bind_quoted: [value: value, ctx: ctx, fields: fields] do
       fields
-      |> Stream.filter(&Map.has_key?(value, &1))
+      |> Stream.reject(&Map.has_key?(value, &1))
       |> Enum.map(&{ctx, "no field #{&1}"})
+    end
+  end
+
+  defmacro validate_field(value, ctx, field, type, args \\ []) do
+    validator_f = "validate_#{type}" |> String.to_atom()
+
+    unless macro_exported?(Api.Validation, validator_f, 2 + length(args)) do
+      raise "unknown type: `#{type}`"
+    end
+
+    quote bind_quoted: [value: value, ctx: ctx, field: field], unquote: true do
+      case Map.fetch(value, field) do
+        :error ->
+          []
+
+        {:ok, value} ->
+          Api.Validation.unquote(validator_f)(value, ctx ++ [field], unquote_splicing(args))
+      end
     end
   end
 

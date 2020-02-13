@@ -1,7 +1,7 @@
 [
   inputs: ["*.{ex,exs}"],
   locals_without_parens: [
-    required: :*
+    required: :*,
     string: :*,
     integer: :*,
     duration: :*,
