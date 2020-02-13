@@ -18,6 +18,7 @@ defmodule Api.Task do
     task
     |> cast(attrs, [:name, :type, :config])
     |> validate_required([:name, :type, :config])
+    |> unique_constraint(:name)
     |> validate_inclusion(:type, @types)
     |> validate_config()
   end
