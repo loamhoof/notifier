@@ -40,9 +40,16 @@ defmodule Api.Validation do
           quote bind_quoted: [value: value, ctx: ctx], unquote: true do
             Api.Validation.unquote(validator_f)(value, ctx, unquote_splicing(args))
           end
+
         {type, _, [field | args]} ->
           quote bind_quoted: [value: value, ctx: ctx], unquote: true do
-            Api.Validation.validate_field(value, ctx, unquote(field), unquote(type), unquote(args))
+            Api.Validation.validate_field(
+              value,
+              ctx,
+              unquote(field),
+              unquote(type),
+              unquote(args)
+            )
           end
       end)
 
@@ -218,14 +225,20 @@ defmodule Api.Validation do
 
   defmacro validate_regex(value, ctx, opts \\ []) do
     quote bind_quoted: [value: value, ctx: ctx, opts: opts] do
-      case Regex.compile(value) do
-        {:error, error} ->
-          {ctx, "not a valid regex: #{inspect(error)}"}
+      case Api.Validation.validate_string(value, ctx, opts) do
+        [] ->
+          case Regex.compile(value) do
+            {:error, error} ->
+              {ctx, "not a valid regex: #{inspect(error)}"}
 
-        {:ok, _} ->
-          validators = %{}
+            {:ok, _} ->
+              validators = %{}
 
-          Api.Validation.validate_options(validators, opts)
+              Api.Validation.validate_options(validators, opts)
+          end
+
+        errors ->
+          errors
       end
     end
   end
