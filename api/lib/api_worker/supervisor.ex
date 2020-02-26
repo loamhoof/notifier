@@ -12,7 +12,7 @@ defmodule ApiWorker.Supervisor do
       {ApiWorker.EventManager, name: ApiWorker.EventManager},
       {ApiWorker.ConfigReloader, name: ApiWorker.ConfigReloader},
       {ApiWorker.ResultManager, name: ApiWorker.ResultManager},
-      {ApiWorker.NotificationSender, name: ApiWorker.NotificationSender}
+      {ApiWorker.Notifier, name: ApiWorker.Notifier}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
