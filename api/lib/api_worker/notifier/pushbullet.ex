@@ -11,7 +11,7 @@ defmodule ApiWorker.Notifier.Pushbullet do
 
   @impl true
   def push(config, notif) do
-    case ApiWorker.Pushbullet.push(config, notif) do
+    case ApiWorker.HTTP.Pushbullet.push(config, notif) do
       {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
         :ok
 

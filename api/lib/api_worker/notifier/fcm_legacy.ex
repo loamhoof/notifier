@@ -14,7 +14,7 @@ defmodule ApiWorker.Notifier.FCMLegacy do
 
   @impl true
   def push(config, notif) do
-    case ApiWorker.FCMLegacy.push(config, notif) do
+    case ApiWorker.HTTP.FCMLegacy.push(config, notif) do
       {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
         :ok
 
