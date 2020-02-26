@@ -1,7 +1,7 @@
 defmodule ApiWorker.NotificationSender do
-  use GenServer
-
   require Logger
+
+  use GenServer
 
   import Ecto.Changeset, only: [change: 2]
   import Ecto.Query, only: [from: 2]
@@ -14,28 +14,22 @@ defmodule ApiWorker.NotificationSender do
 
   @impl true
   def init(:ok) do
-    mode =
-      case Application.fetch_env(:api, :notification_mode) do
-        :error -> :log
-        {:ok, mode} -> mode
-      end
-
-    unless mode in [:log, :bullet, :fcm_legacy] do
-      error_reason = "invalid notification_mode: #{inspect(mode)}"
-      Logger.error(error_reason)
-
-      {:stop, error_reason}
-    else
+    with {:mode?, {:ok, mode}} <- {:mode?, Application.fetch_env(:api, :notification_mode)},
+         {:module?, {:ok, module}} <- {:module?, ApiWorker.Notifier.fetch_module(mode)},
+         {:init?, {:ok, config}} <- {:init?, module.init()} do
       send(self(), :notify)
-
-      {:ok, %{mode: mode}}
+      {:ok, {module, config}}
+    else
+      {:mode?, :error} -> {:stop, "config :notification_mode is not set"}
+      {:module?, :error} -> {:stop, "unknown notification mode"}
+      {:init?, {:error, reason}} -> {:stop, reason}
     end
   end
 
   defp loop(), do: Process.send_after(self(), :notify, 5000)
 
   @impl true
-  def handle_info(:notify, state = %{mode: mode}) do
+  def handle_info(:notify, state = {module, config}) do
     results =
       Repo.all(
         from r in Result,
@@ -51,7 +45,7 @@ defmodule ApiWorker.NotificationSender do
 
       sent =
         ApiWorker.Notification.apply_patches(patches, notif)
-        |> notify(mode)
+        |> (&module.push(config, &1)).()
 
       case sent do
         :ok ->
@@ -70,42 +64,5 @@ defmodule ApiWorker.NotificationSender do
     loop()
 
     {:noreply, state, :hibernate}
-  end
-
-  @spec notify(ApiWorker.Notification.t(), atom) :: :ok | {:error, iodata}
-  defp notify(notif, mode) do
-    apply(__MODULE__, String.to_atom("notify_#{mode}"), [notif])
-  end
-
-  def notify_log(notif) do
-    Logger.info(Enum.join(["notif:"] ++ Tuple.to_list(notif), " "))
-
-    :ok
-  end
-
-  def notify_bullet(notif) do
-    case ApiWorker.Pushbullet.push(notif) do
-      {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
-        :ok
-
-      {:ok, %{status_code: status_code}} ->
-        {:error, "unexpected status code when notifying: #{status_code}"}
-
-      anything ->
-        {:error, "error when notifying: #{inspect(anything)}"}
-    end
-  end
-
-  def notify_fcm_legacy(notif) do
-    case ApiWorker.FCMLegacy.push(notif) do
-      {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
-        :ok
-
-      {:ok, %{status_code: status_code}} ->
-        {:error, "unexpected status code when notifying: #{status_code}"}
-
-      anything ->
-        {:error, "error when notifying: #{inspect(anything)}"}
-    end
   end
 end

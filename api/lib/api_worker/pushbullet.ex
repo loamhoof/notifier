@@ -6,19 +6,18 @@ defmodule ApiWorker.Pushbullet do
   end
 
   def process_request_headers(headers) do
-    token = Application.fetch_env!(:api, :pushbullet_token)
-    [{"Content-Type", "application/json"}, {"Access-Token", token}] ++ headers
+    ["Content-Type": "application/json"] ++ headers
   end
 
   defdelegate process_request_body(body), to: Jason, as: :encode_to_iodata!
 
   defdelegate process_response_body(body), to: Jason, as: :decode!
 
-  def push({title, body}) do
-    post("/pushes", %{type: "link", title: title, body: body})
+  def push(token, {title, body}) do
+    post("/pushes", %{type: "link", title: title, body: body}, "Access-Token": token)
   end
 
-  def push({title, body, url}) do
-    post("/pushes", %{type: "link", title: title, body: body, url: url})
+  def push(token, {title, body, url}) do
+    post("/pushes", %{type: "link", title: title, body: body, url: url}, "Access-Token": token)
   end
 end
