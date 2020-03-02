@@ -17,11 +17,7 @@ defmodule ApiWorker.HTTP.Pushbullet do
   @impl true
   defdelegate process_response_body(body), to: Jason, as: :decode!
 
-  def push(token, {title, body}) do
-    post("/pushes", %{type: "link", title: title, body: body}, "Access-Token": token)
-  end
-
-  def push(token, {title, body, url}) do
+  def push(token, {_, title, body, url}) do
     post("/pushes", %{type: "link", title: title, body: body, url: url}, "Access-Token": token)
   end
 end

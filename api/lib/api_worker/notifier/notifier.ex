@@ -1,5 +1,6 @@
 defmodule ApiWorker.Notifier do
-  @type notif() :: {title :: String.t(), body :: String.t(), url :: String.t()}
+  @type notif() ::
+          {id :: pos_integer(), title :: String.t(), body :: String.t(), url :: String.t()}
   @type patch() :: %{field: String.t(), pattern: String.t(), replacement: String.t()}
 
   @callback init() :: {:ok, config :: any()} | {:error, reason :: String.t()}
@@ -58,7 +59,7 @@ defmodule ApiWorker.Notifier do
       )
 
     for {task, result} <- results do
-      notif = {task.name, result.body, result.url}
+      notif = {result.id, task.name, result.body, result.url}
       patches = Map.get(task.config, "patches", [])
 
       sent =
@@ -94,14 +95,17 @@ defmodule ApiWorker.Notifier do
   @spec apply_patch(patch(), notif()) :: notif()
   defp apply_patch(
          %{"field" => field, "pattern" => pattern, "replacement" => replacement},
-         {title, body, url}
+         notif
        ) do
     regex = Regex.compile!(pattern)
 
-    case field do
-      "title" -> {Regex.replace(regex, title, replacement), body, url}
-      "body" -> {title, Regex.replace(regex, body, replacement), url}
-      "url" -> {title, body, Regex.replace(regex, url, replacement)}
-    end
+    elem_index =
+      case field do
+        "title" -> 1
+        "body" -> 2
+        "url" -> 3
+      end
+
+    update_in(notif, [Access.elem(elem_index)], &Regex.replace(regex, &1, replacement))
   end
 end

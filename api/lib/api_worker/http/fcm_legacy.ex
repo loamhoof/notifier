@@ -17,14 +17,19 @@ defmodule ApiWorker.HTTP.FCMLegacy do
   @impl true
   defdelegate process_response_body(body), to: Jason, as: :decode!
 
-  def push(config, {title, body}) do
-    push(config, {title, body, ""})
-  end
-
-  def push({server_key, device_token}, {title, body, _url}) do
+  def push({server_key, device_token}, {id, title, body, _url}) do
     post(
       "/send",
-      %{to: device_token, notification: %{title: title, body: body}},
+      %{
+        to: device_token,
+        notification: %{
+          title: title,
+          body: body
+        },
+        data: %{
+          id: id
+        }
+      },
       Authorization: "key=#{server_key}"
     )
   end
