@@ -22,11 +22,10 @@ export default class Tasks extends PureComponent {
     async fetchTasks() {
         const tasks = await API.fetchTasks();
 
-        this.setState((previousState) => ({
-            ...previousState,
+        this.setState({
             isLoading: false,
             tasks,
-        }));
+        });
     }
 
     async deleteTask(taskID) {
@@ -38,18 +37,17 @@ export default class Tasks extends PureComponent {
             return;
         }
 
-        this.setState((previousState) => {
-            let previousTasks = previousState.tasks;
-            const taskIndex = previousTasks.findIndex((t) => t.id == taskID);
+        this.setState((state) => {
+            let tasks = state.tasks;
+            const taskIndex = tasks.findIndex((t) => t.id == taskID);
             if (taskIndex == -1) {
-                return previousState;
+                return {};
             }
 
-            previousTasks.splice(taskIndex, 1);
+            tasks.splice(taskIndex, 1);
 
             return {
-                ...previousState,
-                tasks: [...previousTasks]
+                tasks: [...tasks]
             };
         });
     }
@@ -64,24 +62,22 @@ export default class Tasks extends PureComponent {
 
         return <>
             <Button title="New" onPress={ this.props.goTo.bind(this, 'newTask') } />
-            <View>{ content }</View>
+            { content }
         </>
     }
 
     renderLoading() {
-        return <>
+        return (
             <ActivityIndicator size="large" color="#0000ff" />
-        </>
+        );
     }
 
     renderLoaded() {
-        return <>
-            { this.state.tasks.map(this.renderOne.bind(this)) }
-        </>
+        return this.state.tasks.map(this.renderOne.bind(this));
     }
 
     renderOne(task) {
-        return <>
+        return (
             <View key={ task.id }>
                 <TouchableNativeFeedback
                     onPress={ this.props.goTo.bind(this, 'task', { taskID: task.id }) }>
@@ -89,8 +85,8 @@ export default class Tasks extends PureComponent {
                         <Text>{ `${task.name} - ${task.type}` }</Text>
                     </View>
                 </TouchableNativeFeedback>
-                <Button title="Delete" onPress={ this.deleteTask.bind(this, task.id) } />
+                {/*<Button title="Delete" onPress={ this.deleteTask.bind(this, task.id) } />*/}
             </View>
-        </>
+        );
     }
 };

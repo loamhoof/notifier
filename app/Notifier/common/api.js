@@ -54,4 +54,7 @@ export default {
     fetchTaskResults(taskID) {
         return this.get(`${BASE_URL}/tasks/${taskID}/results`);
     },
+    ackTaskResult(taskResultID) {
+        return this.post(`${BASE_URL}/task_results/${taskResultID}/ack`);
+    },
 };

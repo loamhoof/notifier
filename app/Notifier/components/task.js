@@ -26,12 +26,11 @@ export default class Task extends PureComponent {
             API.fetchTaskResults(this.props.taskID),
         ]);
 
-        this.setState((previousState) => ({
-            ...previousState,
+        this.setState({
             isLoading: false,
             task,
             taskResults,
-        }));
+        });
     }
 
     render() {
@@ -46,9 +45,9 @@ export default class Task extends PureComponent {
     };
 
     renderLoading() {
-        return <>
+        return (
             <ActivityIndicator size="large" color="#0000ff" />
-        </>
+        );
     }
 
     renderLoaded() {
@@ -62,10 +61,10 @@ export default class Task extends PureComponent {
     }
 
     renderResult(taskResult) {
-        return <>
+        return (
             <View key={ taskResult.id }>
                 <Text>{ JSON.stringify(taskResult) }</Text>
             </View>
-        </>
+        );
     }
 };

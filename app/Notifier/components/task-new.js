@@ -93,65 +93,68 @@ export default class NewTask extends PureComponent {
     }
 
     changeTaskType(newTaskType) {
-        let typeFormDefinition = {};
-        if (newTaskType) {
-            typeFormDefinition = this.typeForms[newTaskType];
-        }
+        this.setState((state) => {
+            let typeFormDefinition = {};
+            if (newTaskType) {
+                typeFormDefinition = this.typeForms[newTaskType];
+            }
 
-        const [castTaskType, isValidTaskType, computedTaskType] = this.computeParam(this.form.type, newTaskType);
+            const [castTaskType, isValidTaskType, computedTaskType] = this.computeParam(this.form.type, newTaskType);
 
-        const form = { ...this.state.form, type: newTaskType };
-        const castForm = { ...this.state.castForm, type: castTaskType };
-        const isValidForm = { ...this.state.isValidForm, type: isValidTaskType };
-        const computedForm = { ...this.state.computedForm, type: computedTaskType };
+            const form = { ...state.form, type: newTaskType };
+            const castForm = { ...state.castForm, type: castTaskType };
+            const isValidForm = { ...state.isValidForm, type: isValidTaskType };
+            const computedForm = { ...state.computedForm, type: computedTaskType };
 
-        const typeForms = this.initForm(typeFormDefinition);
-        const [typeForm, castTypeForm, isValidTypeForm, computedTypeForm] = typeForms;
+            const typeForms = this.initForm(typeFormDefinition);
+            const [typeForm, castTypeForm, isValidTypeForm, computedTypeForm] = typeForms;
 
-        const isValid = this.isValid(isValidForm, isValidTypeForm);
+            const isValid = this.isValid(isValidForm, isValidTypeForm);
 
-        this.setState((previousState) => ({
-            ...previousState,
-            form, castForm, computedForm, isValidForm,
-            typeForm, castTypeForm, computedTypeForm, isValidTypeForm,
-            isValid,
-        }));
+            return {
+                form, castForm, computedForm, isValidForm,
+                typeForm, castTypeForm, computedTypeForm, isValidTypeForm,
+                isValid,
+            };
+        });
     }
 
     changeFormParam(paramKey, newValue) {
-        const [castValue, isValidValue, computedValue] = this.computeParam(this.form[paramKey], newValue);
+        this.setState((state) => {
+            const [castValue, isValidValue, computedValue] = this.computeParam(this.form[paramKey], newValue);
 
-        const form = { ...this.state.form, [paramKey]: newValue };
-        const castForm = { ...this.state.castForm, [paramKey]: castValue };
-        const isValidForm = { ...this.state.isValidForm, [paramKey]: isValidValue };
-        const computedForm = { ...this.state.computedForm, [paramKey]: computedValue };
+            const form = { ...state.form, [paramKey]: newValue };
+            const castForm = { ...state.castForm, [paramKey]: castValue };
+            const isValidForm = { ...state.isValidForm, [paramKey]: isValidValue };
+            const computedForm = { ...state.computedForm, [paramKey]: computedValue };
 
-        const isValid = this.isValid(isValidForm, this.state.isValidTypeForm);
+            const isValid = this.isValid(isValidForm, state.isValidTypeForm);
 
-        this.setState((previousState) => ({
-            ...previousState,
-            form, castForm, isValidForm, computedForm,
-            isValid,
-        }));
+            return {
+                form, castForm, isValidForm, computedForm,
+                isValid,
+            };
+        });
     }
 
     changeTypeFormParam(paramKey, newValue) {
-        const taskType = this.state.form.type;
-        const paramDefinition = this.typeForms[taskType][paramKey];
-        const [castValue, isValidValue, computedValue] = this.computeParam(paramDefinition, newValue);
+        this.setState((state) => {
+            const taskType = state.form.type;
+            const paramDefinition = this.typeForms[taskType][paramKey];
+            const [castValue, isValidValue, computedValue] = this.computeParam(paramDefinition, newValue);
 
-        const typeForm = { ...this.state.typeForm, [paramKey]: newValue };
-        const castTypeForm = { ...this.state.castTypeForm, [paramKey]: castValue };
-        const isValidTypeForm = { ...this.state.isValidTypeForm, [paramKey]: isValidValue };
-        const computedTypeForm = { ...this.state.computedTypeForm, [paramKey]: computedValue };
+            const typeForm = { ...state.typeForm, [paramKey]: newValue };
+            const castTypeForm = { ...state.castTypeForm, [paramKey]: castValue };
+            const isValidTypeForm = { ...state.isValidTypeForm, [paramKey]: isValidValue };
+            const computedTypeForm = { ...state.computedTypeForm, [paramKey]: computedValue };
 
-        const isValid = this.isValid(this.state.isValidForm, isValidTypeForm);
+            const isValid = this.isValid(state.isValidForm, isValidTypeForm);
 
-        this.setState((previousState) => ({
-            ...previousState,
-            typeForm, castTypeForm, isValidTypeForm, computedTypeForm,
-            isValid,
-        }));
+            return {
+                typeForm, castTypeForm, isValidTypeForm, computedTypeForm,
+                isValid,
+            };
+        });
     }
 
     isValid(isValidForm, isValidTypeForm) {
@@ -162,10 +165,9 @@ export default class NewTask extends PureComponent {
     }
 
     async createTask() {
-        this.setState((previousState) => ({
-            ...previousState,
+        this.setState({
             isSubmitting: true,
-        }));
+        });
 
         try {
             await API.createTask({
@@ -175,10 +177,9 @@ export default class NewTask extends PureComponent {
         } catch (error) {
             console.warn(error);
 
-            this.setState((previousState) => ({
-                ...previousState,
+            this.setState({
                 isSubmitting: false,
-            }));
+            });
 
             return;
         }
@@ -191,7 +192,6 @@ export default class NewTask extends PureComponent {
         this.changeTaskType('rss');
     }
 
-    // TODO: precompute isValid & transformed form
     render() {
         return <>
             <Button title="Tasks" onPress={ () => this.props.goTo('tasks') } />
