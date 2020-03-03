@@ -1,4 +1,5 @@
 import React, { PureComponent } from 'react';
+import { Linking } from 'react-native';
 import firebase from 'react-native-firebase';
 
 import Task from './components/task';
@@ -7,48 +8,15 @@ import NewTask from './components/task-new';
 
 import API from './common/api';
 
-
 const ROUTER = {
     task: Task,
     tasks: Tasks,
     newTask: NewTask,
 };
 
-let deregisters = [];
-(async() => {
-    const enabled = await firebase.messaging().hasPermission();
-    if (!enabled) {
-        await firebase.messaging().requestPermission();
-    }
-
-    const token = await firebase.messaging().getToken();
-
-    console.log(`FCM Token: ${token}`);
-
-    const channel = new firebase.notifications.Android.Channel(
-        'notifier',
-        'notifier',
-        firebase.notifications.Android.Importance.Max);
-    await firebase.notifications().android.createChannel(channel);
-
-    deregisters.push(firebase.notifications().onNotification((notification) => {
-        console.log('Received', notification._title, notification._body);
-
-        notification.android.setChannelId('notifier');
-        notification.android.setPriority(firebase.notifications.Android.Priority.Max);
-        notification.android.setAutoCancel(true);
-        firebase.notifications().displayNotification(notification);
-    }));
-
-    deregisters.push(firebase.notifications().onNotificationOpened(async(notification) => {
-        console.log('Opened', notification.notification.data.id);
-
-        const resultID = notification.notification.data.id;
-        console.log(await API.ackTaskResult(resultID));
-    }));
-})();
-
 export default class App extends PureComponent {
+    deregisters = [];
+
     state = {
         location: 'tasks',
         locationParams: {},
@@ -68,8 +36,73 @@ export default class App extends PureComponent {
         });
     }
 
+    async handleOpenedNotification(data) {
+        console.log('Handling', data.id);
+        const url = data.url;
+        if (!url) {
+            return;
+        }
+
+        const canOpen = await Linking.canOpenURL(url);
+        if (!canOpen) {
+            console.error(`Could not open ${url}`);
+
+            return;
+        }
+
+        console.log('Opening', url);
+        await Linking.openURL(url);
+
+        const resultID = data.id;
+        await API.ackTaskResult(resultID);
+        console.log('Acked', resultID);
+    }
+
+    async componentDidMount() {
+        console.log('Mount App');
+        const enabled = await firebase.messaging().hasPermission();
+        if (!enabled) {
+            await firebase.messaging().requestPermission();
+        }
+
+        // const token = await firebase.messaging().getToken();
+
+        // console.log(`FCM Token: ${token}`);
+
+        const channel = new firebase.notifications.Android.Channel(
+            'notifier',
+            'notifier',
+            firebase.notifications.Android.Importance.Max);
+        await firebase.notifications().android.createChannel(channel);
+
+        this.deregisters.push(firebase.notifications().onNotification((notification) => {
+            console.log('Received', notification._title, notification._body);
+
+            notification.android.setChannelId('notifier');
+            notification.android.setPriority(firebase.notifications.Android.Priority.Max);
+            notification.android.setAutoCancel(true);
+            firebase.notifications().displayNotification(notification);
+        }));
+
+        this.deregisters.push(firebase.notifications().onNotificationOpened((notification) => {
+            const data = notification.notification.data;
+            console.log('Opened', data.id);
+            this.handleOpenedNotification(data);
+        }));
+
+        const initialNotification = await firebase.notifications().getInitialNotification()
+        if (!initialNotification) {
+            return;
+        }
+
+        const data = initialNotification.notification.data;
+        console.log('Initial', data.id);
+        this.handleOpenedNotification(data);
+    }
+
     componentWillUnmount() {
-        for (const deregister of deregisters) {
+        console.log('Unmount App');
+        for (const deregister of this.deregisters) {
             deregister();
         }
     }
