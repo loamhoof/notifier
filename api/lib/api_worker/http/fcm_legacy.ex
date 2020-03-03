@@ -17,7 +17,7 @@ defmodule ApiWorker.HTTP.FCMLegacy do
   @impl true
   defdelegate process_response_body(body), to: Jason, as: :decode!
 
-  def push({server_key, device_token}, {id, title, body, _url}) do
+  def push({server_key, device_token}, {id, title, body, url}) do
     post(
       "/send",
       %{
@@ -27,7 +27,10 @@ defmodule ApiWorker.HTTP.FCMLegacy do
           body: body
         },
         data: %{
-          id: id
+          id: id,
+          title: title,
+          body: body,
+          url: url
         }
       },
       Authorization: "key=#{server_key}"
