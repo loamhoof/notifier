@@ -65,8 +65,8 @@ defmodule ApiWorker.Worker.SwitchDiscount do
          {:ok, to, _} <- DateTime.from_iso8601(to) do
       from = from |> DateTime.to_date() |> Date.to_string()
       to = to |> DateTime.to_date() |> Date.to_string()
-      regular_value = String.to_float(regular_value)
-      discount_value = String.to_float(discount_value)
+      {regular_value, ""} = Float.parse(regular_value)
+      {discount_value, ""} = Float.parse(discount_value)
       discount = :erlang.float_to_binary((1 - discount_value / regular_value) * 100, decimals: 0)
       message = "#{discount_value} (-#{discount}%) from #{from} to #{to}"
       {:ok, message}
