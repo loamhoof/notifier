@@ -10,8 +10,7 @@ defmodule Api.MixProject do
       compilers: [:phoenix] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps(),
-      test_paths: ["lib/api/test"]
+      deps: deps()
     ]
   end
 

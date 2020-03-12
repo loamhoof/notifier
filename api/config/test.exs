@@ -16,3 +16,5 @@ config :api, ApiWeb.Endpoint,
 
 # Print only warnings and errors during test
 config :logger, level: :warn
+
+config :api, :notification_mode, :log
