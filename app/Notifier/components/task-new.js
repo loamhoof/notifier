@@ -8,14 +8,16 @@ import {
 } from 'react-native';
 
 import API from '../common/api';
-import Time from '../common/time';
-import {
-    isStrictlyPositive,
-    isTrueish,
-} from '../common/validators';
+import { isTrueish } from '../common/validators';
+
+import ReminderForm from './task-new-forms/reminder.js';
+import RSSForm from './task-new-forms/rss.js';
+import SwitchDiscountForm from './task-new-forms/switch_discount.js';
 
 
 export default class NewTask extends PureComponent {
+    DEFAULT_TASK_TYPE = 'switch_discount';
+
     state = {
         form: {},
         castForm: {},
@@ -41,18 +43,9 @@ export default class NewTask extends PureComponent {
     }
 
     typeForms = {
-        rss: {
-            interval: {
-                default: '' + 60,
-                cast: (interval) => parseInt(interval) * 1000,
-                isValid: isStrictlyPositive,
-                compute: (interval, isValid) => isValid ? Time.toString(interval / 1000) : '',
-            },
-            feed: {
-                default: '',
-                isValid: isTrueish,
-            },
-        },
+        reminder: ReminderForm.form,
+        rss: RSSForm.form,
+        switch_discount: SwitchDiscountForm.form,
     }
 
     constructor(props) {
@@ -187,9 +180,8 @@ export default class NewTask extends PureComponent {
         this.props.goTo('tasks');
     }
 
-    // DEV
     componentDidMount() {
-        this.changeTaskType('rss');
+        this.changeTaskType(this.DEFAULT_TASK_TYPE);
     }
 
     render() {
@@ -205,7 +197,9 @@ export default class NewTask extends PureComponent {
                     selectedValue={ this.state.form.type }
                     onValueChange={ this.changeTaskType.bind(this) } >
                     <Picker.Item label="" value="" />
+                    <Picker.Item label="Reminder" value="reminder" />
                     <Picker.Item label="RSS" value="rss" />
+                    <Picker.Item label="Switch Discount" value="switch_discount" />
                 </Picker>
                 { this.renderForm() }
                 <Button
@@ -218,23 +212,12 @@ export default class NewTask extends PureComponent {
 
     renderForm() {
         switch (this.state.form.type) {
+        case 'reminder':
+            return ReminderForm.render.apply(this);
         case 'rss':
-            return this.renderRSS();
+            return RSSForm.render.apply(this);
+        case 'switch_discount':
+            return SwitchDiscountForm.render.apply(this);
         }
-    }
-
-    renderRSS() {
-        return <>
-            <Text>Interval</Text>
-            <Text>{ this.state.computedTypeForm.interval }</Text>
-            <TextInput
-                keyboardType="number-pad"
-                value={ this.state.typeForm.interval }
-                onChangeText={ this.changeTypeFormParam.bind(this, 'interval') } />
-            <Text>Feed</Text>
-            <TextInput
-                value={ this.state.typeForm.feed }
-                onChangeText={ this.changeTypeFormParam.bind(this, 'feed') } />
-        </>
     }
 };

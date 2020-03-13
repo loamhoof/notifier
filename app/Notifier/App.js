@@ -1,5 +1,10 @@
 import React, { PureComponent } from 'react';
-import { Linking } from 'react-native';
+import {
+    DrawerLayoutAndroid,
+    Linking,
+    Text,
+    View
+} from 'react-native';
 import firebase from 'react-native-firebase';
 
 import Task from './components/task';
@@ -18,7 +23,7 @@ export default class App extends PureComponent {
     deregisters = [];
 
     state = {
-        location: 'tasks',
+        location: 'newTask',
         locationParams: {},
     };
 
@@ -30,10 +35,26 @@ export default class App extends PureComponent {
     }
 
     render() {
-        return React.createElement(ROUTER[this.state.location], {
+        const view = React.createElement(ROUTER[this.state.location], {
             goTo: this.goTo.bind(this),
             ...this.state.locationParams
         });
+
+        return (
+            <DrawerLayoutAndroid
+              drawerWidth={ 300 }
+              renderNavigationView={ this.renderNavigationView.bind(this) }>
+                { view }
+            </DrawerLayoutAndroid>
+        );
+    }
+
+    renderNavigationView() {
+        return (
+            <View style={{ flex: 1, backgroundColor: '#fff' }}>
+              <Text style={{ margin: 10, fontSize: 15, textAlign: 'left' }}>I'm in the Drawer!</Text>
+            </View>
+        );
     }
 
     async handleOpenedNotification(data) {
