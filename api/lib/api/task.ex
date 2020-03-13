@@ -4,6 +4,8 @@ defmodule Api.Task do
 
   @derive {Jason.Encoder, only: [:id, :name, :type, :config, :inserted_at, :updated_at]}
 
+  alias Api.Task.Config
+
   schema "tasks" do
     field :name, :string
     field :type, :string
@@ -14,6 +16,7 @@ defmodule Api.Task do
 
   @types ~w|rss switch_discount reminder|
 
+  @spec changeset(%__MODULE__{}, Plug.Conn.params()) :: Ecto.Changeset.t(%__MODULE__{})
   def changeset(task, attrs) do
     task
     |> cast(attrs, [:name, :type, :config])
@@ -33,6 +36,6 @@ defmodule Api.Task do
         "reminder" -> Api.Task.Config.Reminder
       end
 
-    Api.Task.Config.validate_config(changeset, module)
+    Config.validate_config(changeset, module)
   end
 end

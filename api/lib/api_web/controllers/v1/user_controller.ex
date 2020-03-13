@@ -3,12 +3,14 @@ defmodule ApiWeb.V1.UserController do
 
   alias Api.{Repo, User}
 
+  @spec index(Plug.Conn.t(), %{}) :: Plug.Conn.t()
   def index(conn, _params) do
     users = Repo.all(User)
 
     json(conn, users)
   end
 
+  @spec show(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
     case Repo.get(User, id) do
       nil -> send_resp(conn, 404, "Not Found")
@@ -16,6 +18,7 @@ defmodule ApiWeb.V1.UserController do
     end
   end
 
+  @spec create(Plug.Conn.t(), %{}) :: Plug.Conn.t()
   def create(conn, _params) do
     result =
       %User{}
@@ -33,8 +36,9 @@ defmodule ApiWeb.V1.UserController do
     end
   end
 
+  @spec update(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def update(conn, %{"id" => id}) do
-    result =
+    user =
       case conn.method do
         "PUT" ->
           %User{id: String.to_integer(id)}
@@ -42,12 +46,15 @@ defmodule ApiWeb.V1.UserController do
         "PATCH" ->
           Repo.get!(User, id)
       end
+
+    result =
+      user
       |> User.update_changeset(conn.body_params)
       |> Repo.update()
 
     case result do
-      {:ok, user} ->
-        json(conn, user)
+      {:ok, updated_user} ->
+        json(conn, updated_user)
 
       {:error, %{errors: errors}} ->
         conn
@@ -56,6 +63,7 @@ defmodule ApiWeb.V1.UserController do
     end
   end
 
+  @spec delete(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def delete(conn, %{"id" => id}) do
     case Repo.get(User, id) do
       nil ->

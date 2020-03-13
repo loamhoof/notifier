@@ -1,6 +1,8 @@
 defmodule ApiWorker.Notifier.FCMLegacy do
   @behaviour ApiWorker.Notifier
 
+  alias ApiWorker.HTTP.FCMLegacy
+
   @impl true
   def init() do
     with {:key, {:ok, key}} <- {:key, System.fetch_env("FCM_SERVER_KEY")},
@@ -14,7 +16,7 @@ defmodule ApiWorker.Notifier.FCMLegacy do
 
   @impl true
   def push(config, notif) do
-    case ApiWorker.HTTP.FCMLegacy.push(config, notif) do
+    case FCMLegacy.push(config, notif) do
       {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
         :ok
 

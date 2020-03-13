@@ -3,14 +3,16 @@ defmodule Api.Task.Config do
 
   import Api.Validation, only: [validate: 1]
 
+  @spec validate_config(Ecto.Changeset.t(%Api.Task{}), module()) :: Ecto.Changeset.t(%Api.Task{})
   def validate_config(changeset, module) do
     validate_change(changeset, :config, fn :config, config ->
       errors = __MODULE__.validate(config) ++ module.validate(config)
 
       Enum.map(errors, fn {ctx, error} ->
-        Enum.join(ctx, ".")
-        |> (&String.to_atom("config." <> &1)).()
-        |> (&{&1, error}).()
+        ctx
+        |> Enum.join(".")
+        |> (&("." <> &1)).()
+        |> (&{:config, {error, path: &1}}).()
       end)
     end)
   end

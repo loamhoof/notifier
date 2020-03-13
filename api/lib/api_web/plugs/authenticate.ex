@@ -14,10 +14,10 @@ defmodule ApiWeb.Plug.Authenticate do
            [type, token] <- String.split(authorization, " ", parts: 2) do
         case type do
           "Basic" -> authenticate_basic(token)
-          _ -> :error
+          _unknown_type -> :error
         end
       else
-        _ -> :error
+        _else -> :error
       end
 
     case res do
@@ -35,7 +35,7 @@ defmodule ApiWeb.Plug.Authenticate do
 
     case res do
       {:ok, user} -> {:ok, user}
-      _ -> :error
+      _else -> :error
     end
   end
 end

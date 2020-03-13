@@ -9,7 +9,9 @@ defmodule ApiWorker.Worker.SwitchDiscount do
 
     with {:ok, body} <- get(url),
          {:ok, body} <- Jason.decode(body) do
-      to_notif(body, link) |> if_diff(last_result)
+      body
+      |> to_notif(link)
+      |> if_diff(last_result)
     else
       {:error, reason} -> {:error, "#{inspect(reason)}"}
       anything -> {:error, "unexpected error: #{inspect(anything)}"}
@@ -25,9 +27,7 @@ defmodule ApiWorker.Worker.SwitchDiscount do
   end
 
   defp to_notif(%{"prices" => [prices]}, link) do
-    unless Map.has_key?(prices, "discount_price") do
-      :nothing
-    else
+    if Map.has_key?(prices, "discount_price") do
       case extract(prices) do
         :error ->
           {:error, "unexpected prices body: #{inspect(prices)}"}
@@ -38,6 +38,8 @@ defmodule ApiWorker.Worker.SwitchDiscount do
             {:error, reason} -> {:error, "unexpected error: #{inspect(reason)}"}
           end
       end
+    else
+      :nothing
     end
   end
 
@@ -75,5 +77,3 @@ defmodule ApiWorker.Worker.SwitchDiscount do
     end
   end
 end
-
-# {"personalized":false,"country":"JP","prices":[{"title_id":70010000016519,"sales_status":"onsale","regular_price":{"amount":"3,500円","currency":"JPY","raw_value":"3500"},"discount_price":{"amount":"2,800円","currency":"JPY","raw_value":"2800","start_datetime":"2019-11-10T15:00:00Z","end_datetime":"2019-12-04T14:59:59Z"}}]}

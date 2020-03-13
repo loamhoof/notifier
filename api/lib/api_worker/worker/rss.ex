@@ -9,7 +9,9 @@ defmodule ApiWorker.Worker.RSS do
 
     with {:ok, %{items: items}} <- Scrape.feed(feed),
          item when not is_nil(item) <- find(items, filters) do
-      to_notif(item) |> if_diff(last_result)
+      item
+      |> to_notif()
+      |> if_diff(last_result)
     else
       nil -> :nothing
       {:ok, %{items: []}} -> {:error, "empty feed"}
@@ -30,11 +32,11 @@ defmodule ApiWorker.Worker.RSS do
     end
   end
 
-  def to_notif(%{title: title, article_url: article_url}) do
+  defp to_notif(%{title: title, article_url: article_url}) do
     {:ok, title, article_url}
   end
 
-  def to_notif(_) do
+  defp to_notif(_feed_item) do
     {:error, "missing `title` or `article_url`"}
   end
 end

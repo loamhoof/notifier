@@ -1,31 +1,37 @@
 defmodule ApiWorker.Worker do
+  @typep on_run() ::
+           :nothing
+           | {:ok, body :: String.t(), url :: String.t()}
+           | {:error, reason :: String.t()}
+
   @callback run(
               config :: map(),
               last_result ::
                 nil | {body :: String.t(), url :: String.t(), acked_at :: DateTime.t()}
-            ) ::
-              :nothing
-              | {:ok, body :: String.t(), url :: String.t()}
-              | {:error, reason :: String.t()}
+            ) :: on_run()
 
   require Logger
 
   use GenServer, restart: :transient
 
+  @spec start_link({String.t(), {String.t(), NaiveDateTime.t(), map()}}) :: GenServer.on_start()
   def start_link({task_type, init_state}) do
     GenServer.start_link(__MODULE__, {task_type, init_state})
   end
 
   ## Client API
 
+  @spec whoareyou(GenServer.server()) :: {String.t(), NaiveDateTime.t()}
   def whoareyou(server) do
     GenServer.call(server, :info)
   end
 
+  @spec ack(GenServer.server(), DateTime.t()) :: :ok
   def ack(server, acked_at) do
     GenServer.cast(server, {:ack, acked_at})
   end
 
+  @spec unack(GenServer.server()) :: :ok
   def unack(server) do
     GenServer.cast(server, :unack)
   end
@@ -113,6 +119,8 @@ defmodule ApiWorker.Worker do
 
   ## Helpers
 
+  @spec if_diff(on_run(), {body :: String.t(), url :: String.t(), acked_at :: DateTime.t()}) ::
+          on_run()
   def if_diff(notif, nil), do: notif
 
   def if_diff(notif, {last_body, last_url, _}) do

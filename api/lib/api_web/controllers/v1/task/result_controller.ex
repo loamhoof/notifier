@@ -5,15 +5,18 @@ defmodule ApiWeb.V1.Task.ResultController do
 
   alias Api.{Repo, Task.Result}
 
+  @spec index(Plug.Conn.t(), %{}) :: Plug.Conn.t()
   def index(conn, params) do
     results =
-      from(Result)
+      Result
+      |> from()
       |> maybe_task_id_filter(params)
       |> Repo.all()
 
     json(conn, results)
   end
 
+  @spec show(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
     case Repo.get(Result, id) do
       nil -> send_resp(conn, 404, "Not found")
@@ -21,6 +24,7 @@ defmodule ApiWeb.V1.Task.ResultController do
     end
   end
 
+  @spec delete(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def delete(conn, %{"id" => id}) do
     case Repo.get(Result, id) do
       nil ->

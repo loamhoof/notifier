@@ -6,6 +6,7 @@ defmodule ApiWeb.V1.Task.UnackController do
 
   alias Api.{Repo, Task.Result}
 
+  @spec create(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def create(conn, params) do
     task_result =
       case params do
@@ -34,7 +35,8 @@ defmodule ApiWeb.V1.Task.UnackController do
 
       true ->
         result =
-          change(task_result, %{acked_at: nil})
+          task_result
+          |> change(%{acked_at: nil})
           |> Repo.update()
 
         case result do

@@ -12,6 +12,7 @@ defmodule Api.User do
     timestamps()
   end
 
+  @spec create_changeset(%__MODULE__{}, Plug.Conn.params()) :: Ecto.Changeset.t(%__MODULE__{})
   def create_changeset(%__MODULE__{} = user, attrs) do
     user
     |> cast(attrs, [:name, :password, :is_admin])
@@ -19,6 +20,7 @@ defmodule Api.User do
     |> put_pass_hash()
   end
 
+  @spec update_changeset(%__MODULE__{}, Plug.Conn.params()) :: Ecto.Changeset.t(%__MODULE__{})
   def update_changeset(%__MODULE__{} = user, attrs) do
     user
     |> cast(attrs, [:name, :password, :is_admin])
@@ -31,7 +33,7 @@ defmodule Api.User do
       %Ecto.Changeset{valid?: true, changes: %{password: password}} ->
         change(changeset, Argon2.add_hash(password))
 
-      _ ->
+      _else ->
         changeset
     end
   end

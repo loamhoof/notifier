@@ -6,16 +6,20 @@ defmodule ApiWorker.ResultManager do
 
   alias Api.{Repo, Task, Task.Result}
 
+  @spec start_link(GenServer.options()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
   ## Client API
 
+  @spec last_result(GenServer.server(), String.t()) ::
+          {body :: String.t(), url :: String.t(), acked_at :: DateTime.t()}
   def last_result(server, task_name) do
     GenServer.call(server, {:last_result, task_name})
   end
 
+  @spec push(GenServer.server(), String.t(), String.t(), String.t()) :: :ok
   def push(server, task_name, body, url) do
     GenServer.cast(server, {:push, task_name, body, url})
   end

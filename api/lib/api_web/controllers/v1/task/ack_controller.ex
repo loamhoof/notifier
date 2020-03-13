@@ -6,20 +6,9 @@ defmodule ApiWeb.V1.Task.AckController do
 
   alias Api.{Repo, Task.Result}
 
+  @spec create(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def create(conn, params) do
-    task_result =
-      case params do
-        %{"task_id" => task_id} ->
-          Repo.one(
-            from r in Result,
-              where: r.task_id == ^task_id,
-              order_by: [desc: r.id],
-              limit: 1
-          )
-
-        %{"result_id" => result_id} ->
-          Repo.get(Result, result_id)
-      end
+    task_result = get_task_result(params)
 
     cond do
       is_nil(task_result) ->
@@ -38,22 +27,43 @@ defmodule ApiWeb.V1.Task.AckController do
         |> json(%{"message" => "Cannot ack a result which has not been sent yet"})
 
       true ->
-        now = DateTime.utc_now() |> DateTime.truncate(:second)
+        ack(conn, task_result)
+    end
+  end
 
-        result =
-          change(task_result, %{acked_at: now})
-          |> Repo.update()
+  @spec get_task_result(%{required(String.t()) => String.t()}) :: %Result{} | nil
 
-        case result do
-          {:ok, task_result} ->
-            ApiWorker.EventManager.ack(ApiWorker.EventManager, task_result.task_id, now)
-            json(conn, task_result)
+  defp get_task_result(%{"task_id" => task_id}) do
+    Repo.one(
+      from r in Result,
+        where: r.task_id == ^task_id,
+        order_by: [desc: r.id],
+        limit: 1
+    )
+  end
 
-          {:error, %{errors: errors}} ->
-            conn
-            |> put_status(400)
-            |> json(errors)
-        end
+  defp get_task_result(%{"result_id" => result_id}) do
+    Repo.get(Result, result_id)
+  end
+
+  @spec ack(Plug.Conn.t(), %Result{}) :: Plug.Conn.t()
+  defp ack(conn, task_result) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    result =
+      task_result
+      |> change(%{acked_at: now})
+      |> Repo.update()
+
+    case result do
+      {:ok, task_result} ->
+        ApiWorker.EventManager.ack(ApiWorker.EventManager, task_result.task_id, now)
+        json(conn, task_result)
+
+      {:error, %{errors: errors}} ->
+        conn
+        |> put_status(400)
+        |> json(errors)
     end
   end
 end

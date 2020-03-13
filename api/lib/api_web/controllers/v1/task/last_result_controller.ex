@@ -5,6 +5,7 @@ defmodule ApiWeb.V1.Task.LastResultController do
 
   alias Api.{Repo, Task, Task.Result}
 
+  @spec index(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def index(conn, %{"task_id" => task_id}) do
     last_result =
       Repo.one(

@@ -1,41 +1,49 @@
 defmodule ApiWorker.WorkerRegistry do
   use GenServer
 
+  @spec start_link(GenServer.options()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
   ## Client API
 
+  @spec which_workers(GenServer.server()) :: %{optional(String.t()) => NaiveDateTime.t()}
   def which_workers(server) do
     GenServer.call(server, :info)
   end
 
+  @spec new(GenServer.server(), String.t(), NaiveDateTime.t(), String.t(), map()) :: :ok
   def new(server, task_name, version, type, config) do
     GenServer.call(server, {:new, task_name, version, type, config})
   end
 
+  @spec kill(GenServer.server(), String.t()) :: :ok
   def kill(server, task_name) do
     GenServer.call(server, {:kill, task_name})
   end
 
+  @spec register(GenServer.server(), String.t()) :: :ok
   def register(server, task_name) do
     GenServer.call(server, {:register, task_name, self()})
   end
 
+  @spec on_task_ack(GenServer.server(), String.t(), DateTime.t()) :: :ok
   def on_task_ack(server, task_name, acked_at) do
     GenServer.cast(server, {:send_ack, task_name, acked_at})
   end
 
+  @spec on_task_unack(GenServer.server(), String.t()) :: :ok
   def on_task_unack(server, task_name) do
     GenServer.cast(server, {:send_unack, task_name})
   end
 
-  ## Defining GenServer Callbacks
+  ## GenServer Callbacks
 
   @impl true
   def init(:ok) do
-    Supervisor.which_children(ApiWorker.WorkerSupervisor)
+    ApiWorker.WorkerSupervisor
+    |> Supervisor.which_children()
     |> Stream.map(&elem(&1, 1))
     |> Stream.map(&{ApiWorker.Worker.whoareyou(&1), &1})
     |> Stream.map(fn {{task_name, version}, pid} -> {task_name, {version, pid}} end)

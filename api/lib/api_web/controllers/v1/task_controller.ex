@@ -3,12 +3,14 @@ defmodule ApiWeb.V1.TaskController do
 
   alias Api.{Repo, Task}
 
+  @spec index(Plug.Conn.t(), %{}) :: Plug.Conn.t()
   def index(conn, _params) do
     tasks = Repo.all(Task)
 
     json(conn, tasks)
   end
 
+  @spec show(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def show(conn, %{"id" => id}) do
     case Repo.get(Task, id) do
       nil -> send_resp(conn, 404, "Not found")
@@ -16,6 +18,7 @@ defmodule ApiWeb.V1.TaskController do
     end
   end
 
+  @spec create(Plug.Conn.t(), %{}) :: Plug.Conn.t()
   def create(conn, _params) do
     result =
       %Task{}
@@ -33,8 +36,9 @@ defmodule ApiWeb.V1.TaskController do
     end
   end
 
+  @spec update(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def update(conn, %{"id" => id}) do
-    result =
+    task =
       case conn.method do
         "PUT" ->
           %Task{id: String.to_integer(id)}
@@ -42,12 +46,15 @@ defmodule ApiWeb.V1.TaskController do
         "PATCH" ->
           Repo.get!(Task, id)
       end
+
+    result =
+      task
       |> Task.changeset(conn.body_params)
       |> Repo.update()
 
     case result do
-      {:ok, task} ->
-        json(conn, task)
+      {:ok, updated_task} ->
+        json(conn, updated_task)
 
       {:error, %{errors: errors}} ->
         conn
@@ -56,6 +63,7 @@ defmodule ApiWeb.V1.TaskController do
     end
   end
 
+  @spec delete(Plug.Conn.t(), %{required(String.t()) => String.t()}) :: Plug.Conn.t()
   def delete(conn, %{"id" => id}) do
     case Repo.get(Task, id) do
       nil ->

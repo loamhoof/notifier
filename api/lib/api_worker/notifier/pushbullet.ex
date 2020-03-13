@@ -1,6 +1,8 @@
 defmodule ApiWorker.Notifier.Pushbullet do
   @behaviour ApiWorker.Notifier
 
+  alias ApiWorker.HTTP.Pushbullet
+
   @impl true
   def init() do
     case System.fetch_env("PUSHBULLET_TOKEN") do
@@ -11,7 +13,7 @@ defmodule ApiWorker.Notifier.Pushbullet do
 
   @impl true
   def push(config, notif) do
-    case ApiWorker.HTTP.Pushbullet.push(config, notif) do
+    case Pushbullet.push(config, notif) do
       {:ok, %{status_code: status_code}} when div(status_code, 100) == 2 ->
         :ok
 

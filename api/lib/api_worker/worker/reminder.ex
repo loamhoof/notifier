@@ -14,7 +14,7 @@ defmodule ApiWorker.Worker.Reminder do
 
     case DateTime.compare(now, next) do
       :gt -> {:ok, description, ""}
-      _ -> :nothing
+      _eq_lt -> :nothing
     end
   end
 end

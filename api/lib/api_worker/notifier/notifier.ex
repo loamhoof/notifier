@@ -1,7 +1,7 @@
 defmodule ApiWorker.Notifier do
-  @type notif() ::
-          {id :: pos_integer(), title :: String.t(), body :: String.t(), url :: String.t()}
-  @type patch() :: %{field: String.t(), pattern: String.t(), replacement: String.t()}
+  @typep notif() ::
+           {id :: pos_integer(), title :: String.t(), body :: String.t(), url :: String.t()}
+  @typep patch() :: %{field: String.t(), pattern: String.t(), replacement: String.t()}
 
   @callback init() :: {:ok, config :: any()} | {:error, reason :: String.t()}
   @callback push(config :: any(), notif()) ::
@@ -16,6 +16,7 @@ defmodule ApiWorker.Notifier do
 
   alias Api.{Repo, Task, Task.Result}
 
+  @spec start_link(GenServer.options()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
@@ -41,14 +42,14 @@ defmodule ApiWorker.Notifier do
       :log -> {:ok, ApiWorker.Notifier.Log}
       :pushbullet -> {:ok, ApiWorker.Notifier.Pushbullet}
       :fcm_legacy -> {:ok, ApiWorker.Notifier.FCMLegacy}
-      _ -> :error
+      _mode -> :error
     end
   end
 
   defp loop(), do: Process.send_after(self(), :notify, 5000)
 
   @impl true
-  def handle_info(:notify, state = {module, config}) do
+  def handle_info(:notify, {module, config} = state) do
     results =
       Repo.all(
         from r in Result,
@@ -59,24 +60,8 @@ defmodule ApiWorker.Notifier do
       )
 
     for {task, result} <- results do
-      notif = {result.id, task.name, result.body, result.url}
-      patches = Map.get(task.config, "patches", [])
-
-      sent =
-        apply_patches(patches, notif)
-        |> (&module.push(config, &1)).()
-
-      case sent do
-        :ok ->
-          now = DateTime.utc_now() |> DateTime.truncate(:second)
-
-          change(result, %{sent_at: now})
-          |> Repo.update()
-
-        {:error, reason} ->
-          Logger.warn(
-            "could not send notification [#{task.name} / #{result.id}]: #{inspect(reason)}"
-          )
+      with :ok <- send_notif(task, result, module, config) do
+        update_result(task, result)
       end
     end
 
@@ -86,6 +71,47 @@ defmodule ApiWorker.Notifier do
   end
 
   ## Helpers
+
+  @spec send_notif(%Task{}, %Result{}, module(), map()) :: :ok | :error
+  defp send_notif(task, result, module, config) do
+    notif = {result.id, task.name, result.body, result.url}
+    patches = Map.get(task.config, "patches", [])
+
+    sent? =
+      patches
+      |> apply_patches(notif)
+      |> (&module.push(config, &1)).()
+
+    case sent? do
+      :ok ->
+        :ok
+
+      {:error, reason} ->
+        Logger.warn(
+          "could not send notification [#{task.name} / #{result.id}]: #{inspect(reason)}"
+        )
+
+        :error
+    end
+  end
+
+  @spec update_result(%Task{}, %Result{}) :: :ok | :error
+  defp update_result(task, result) do
+    now = DateTime.utc_now() |> DateTime.truncate(:second)
+
+    updated? =
+      result
+      |> change(%{sent_at: now})
+      |> Repo.update()
+
+    case updated? do
+      {:ok, _result} ->
+        :ok
+
+      {:error, %{errors: errors}} ->
+        Logger.warn("could not update result [#{task.name} / #{result.id}]: #{inspect(errors)}")
+    end
+  end
 
   @spec apply_patches(list(patch()), notif()) :: notif()
   defp apply_patches(patches, notif) do

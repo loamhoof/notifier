@@ -5,16 +5,19 @@ defmodule ApiWorker.EventManager do
 
   alias Api.{Repo, Task}
 
+  @spec start_link(GenServer.options()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, :ok, opts)
   end
 
   ## Client API
 
+  @spec ack(GenServer.server(), pos_integer(), DateTime.t()) :: :ok
   def ack(server, task_id, acked_at) do
     GenServer.cast(server, {:ack, task_id, acked_at})
   end
 
+  @spec unack(GenServer.server(), pos_integer()) :: :ok
   def unack(server, task_id) do
     GenServer.cast(server, {:unack, task_id})
   end

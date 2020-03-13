@@ -7,6 +7,7 @@ defmodule Api.Validation do
     quote do
       @behaviour unquote(__MODULE__)
 
+      @impl true
       def validate(value) do
         Api.Validation.validate_map(value, [], do: unquote(block))
         |> List.wrap()
@@ -62,7 +63,7 @@ defmodule Api.Validation do
     quote bind_quoted: [value: value, ctx: ctx, fields: fields] do
       fields
       |> Stream.reject(&Map.has_key?(value, &1))
-      |> Enum.map(&{ctx, "no field #{&1}"})
+      |> Enum.map(&{ctx, "no field `#{&1}`"})
     end
   end
 
@@ -209,7 +210,7 @@ defmodule Api.Validation do
     quote bind_quoted: [value: value, ctx: ctx, values: values, opts: opts] do
       cond do
         not Enum.member?(values, value) ->
-          {ctx, "should be one of #{inspect(values)}"}
+          {ctx, "should be one of `#{inspect(values)}`"}
 
         true ->
           validators = %{}
@@ -255,7 +256,7 @@ defmodule Api.Validation do
       |> Enum.map(fn {opt_key, opt_value} ->
         case Map.fetch(unquote(validators), opt_key) do
           :error ->
-            raise "unknown option #{opt_key}"
+            raise "unknown option `#{opt_key}`"
 
           {:ok, {cond_f, error_f}} ->
             if cond_f.(opt_value) do
