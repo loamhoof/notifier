@@ -1,0 +1,50 @@
+name: Elixir CI
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - .github/workflows/elixir.yml
+      - api/**
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      db:
+        image: postgres:11.4-alpine
+        ports:
+          - 5432:5432
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/cache@v1
+        with:
+          path: api/deps
+          key: ${{ runner.os }}-mix-deps-${{ hashFiles(format('{0}{1}', github.workspace, '/api/mix.lock')) }}
+          restore-keys: |
+            ${{ runner.os }}-mix-deps-
+      - uses: actions/cache@v1
+        with:
+          path: api/_build
+          key: ${{ runner.os }}-mix-_build
+          restore-keys: |
+            ${{ runner.os }}-mix-_build
+      - name: Setup elixir
+        uses: actions/setup-elixir@v1
+        with:
+          elixir-version: 1.10.2
+          otp-version: 22.2
+      - name: Install Dependencies
+        run: mix deps.get
+        working-directory: api
+      - name: Run Tests
+        run: mix test
+        working-directory: api
+      - name: Run Dialyzer
+        run: mix dialyzer
+        working-directory: api
+      - name: Run Credo
+        run: mix credo --strict
+        working-directory: api
