@@ -138,17 +138,25 @@ defmodule Api.Validation do
           raise "unknown subtype: `#{subtype}`"
         end
 
-        quote bind_quoted: [value: value, ctx: ctx, subtype: subtype, subtype_opts: subtype_opts],
-              unquote: true do
+        validator =
+          unless subtype == :map do
+            quote bind_quoted: [ctx: ctx, subtype_opts: subtype_opts], unquote: true do
+              fn {v, i} -> Api.Validation.unquote(validator_f)(v, ctx ++ [i], subtype_opts) end
+            end
+          else
+            quote bind_quoted: [ctx: ctx, subtype_opts: subtype_opts], unquote: true do
+              fn {v, i} ->
+                Api.Validation.unquote(validator_f)(v, ctx ++ [i], subtype_opts,
+                  do: unquote(block)
+                )
+              end
+            end
+          end
+
+        quote bind_quoted: [value: value], unquote: true do
           value
           |> Stream.with_index()
-          |> Stream.map(fn {v, i} ->
-            unless subtype == :map do
-              Api.Validation.unquote(validator_f)(v, ctx ++ [i], subtype_opts)
-            else
-              Api.Validation.unquote(validator_f)(v, ctx ++ [i], subtype_opts, do: unquote(block))
-            end
-          end)
+          |> Stream.map(unquote(validator))
           |> Enum.find([], &(&1 != []))
           |> List.wrap()
         end
