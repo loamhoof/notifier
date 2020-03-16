@@ -35,7 +35,7 @@ defmodule Api.MixProject do
     [
       {:argon2_elixir, "~> 2.0"},
       {:credo, "~> 1.2", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 0.4", only: [:dev]},
+      {:dialyxir, "~> 0.4", only: [:dev], runtime: false},
       {:ecto_sql, "~> 3.1"},
       {:jason, "~> 1.0"},
       {:httpoison, "~> 1.5", override: true},
