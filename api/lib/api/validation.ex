@@ -170,10 +170,10 @@ defmodule Api.Validation do
 
         true ->
           validators = %{
-            >: {&(&1 >= length(value)), &{ctx, "length not > #{&1}"}},
-            <: {&(&1 <= length(value)), &{ctx, "length not < #{&1}"}},
-            <=: {&(&1 < length(value)), &{ctx, "length not <= #{&1}"}},
-            >=: {&(&1 > length(value)), &{ctx, "length not >= #{&1}"}}
+            >: {&(length(value) > &1), &{ctx, "length not > #{&1}"}},
+            <: {&(length(value) < &1), &{ctx, "length not < #{&1}"}},
+            <=: {&(length(value) <= &1), &{ctx, "length not <= #{&1}"}},
+            >=: {&(length(value) >= &1), &{ctx, "length not >= #{&1}"}}
           }
 
           Api.Validation.validate_options(validators, list_opts) ++ unquote(validate_sublist)
@@ -189,10 +189,10 @@ defmodule Api.Validation do
 
         true ->
           validators = %{
-            >: {&(&1 >= value), &{ctx, "not > #{&1}"}},
-            <: {&(&1 <= value), &{ctx, "not < #{&1}"}},
-            <=: {&(&1 < value), &{ctx, "not <= #{&1}"}},
-            >=: {&(&1 > value), &{ctx, "not >= #{&1}"}}
+            >: {&(value > &1), &{ctx, "not > #{&1}"}},
+            <: {&(value < &1), &{ctx, "not < #{&1}"}},
+            <=: {&(value <= &1), &{ctx, "not <= #{&1}"}},
+            >=: {&(value >= &1), &{ctx, "not >= #{&1}"}}
           }
 
           Api.Validation.validate_options(validators, opts)
@@ -268,9 +268,9 @@ defmodule Api.Validation do
 
           {:ok, {cond_f, error_f}} ->
             if cond_f.(opt_value) do
-              error_f.(opt_value)
-            else
               []
+            else
+              error_f.(opt_value)
             end
         end
       end)
