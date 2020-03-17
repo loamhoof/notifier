@@ -4,7 +4,7 @@ defmodule Api.Task.Config.SwitchDiscount do
   validate do
     @required ["id", "country", "link"]
 
-    integer "id", >: 0
+    string "id", regex: ~r/^\d+$/
     string "country"
     string "link"
   end
