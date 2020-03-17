@@ -1,4 +1,4 @@
-defmodule Api.Repo.Migrations.UpdateRSSTaskConfig do
+defmodule Api.Repo.Migrations.UpdateSwitchDiscountTaskConfig do
   use Ecto.Migration
 
   import Ecto.Changeset, only: [change: 2]
