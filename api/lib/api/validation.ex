@@ -207,7 +207,9 @@ defmodule Api.Validation do
           {ctx, "not a string"}
 
         true ->
-          validators = %{}
+          validators = %{
+            regex: {&Regex.match?(&1, value), &{ctx, "does not match #{inspect(&1)}"}}
+          }
 
           Api.Validation.validate_options(validators, opts)
       end

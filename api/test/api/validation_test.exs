@@ -68,6 +68,22 @@ defmodule Api.ValidationTest do
     assert [{[:foo], _}, {[:bar], _}] = errors
   end
 
+  test "string: regex" do
+    defmodule Validator do
+      import Api.Validation, only: [validate: 1]
+
+      validate do
+        string :foo, regex: ~r/^a+$/
+      end
+    end
+
+    errors = Validator.validate(%{:foo => "aaa"})
+    assert [] = errors
+
+    errors = Validator.validate(%{:foo => "bbb"})
+    assert [{[:foo], _}] = errors
+  end
+
   test "integer" do
     defmodule Validator do
       import Api.Validation, only: [validate: 1]
