@@ -38,6 +38,36 @@ defmodule Api.ValidationTest do
     assert [{[], _}] = errors
   end
 
+  test "boolean" do
+    defmodule Validator do
+      import Api.Validation, only: [validate: 1]
+
+      validate do
+        boolean :foo
+      end
+    end
+
+    errors = Validator.validate(%{:foo => true})
+    assert [] = errors
+
+    errors = Validator.validate(%{:foo => "true"})
+    assert [{[:foo], _}] = errors
+  end
+
+  test "returns all errors" do
+    defmodule Validator do
+      import Api.Validation, only: [validate: 1]
+
+      validate do
+        boolean :foo
+        boolean :bar
+      end
+    end
+
+    errors = Validator.validate(%{foo: :foo, bar: :bar})
+    assert [{[:foo], _}, {[:bar], _}] = errors
+  end
+
   test "string" do
     defmodule Validator do
       import Api.Validation, only: [validate: 1]
@@ -52,20 +82,6 @@ defmodule Api.ValidationTest do
 
     errors = Validator.validate(%{:foo => :bar})
     assert [{[:foo], _}] = errors
-  end
-
-  test "returns all errors" do
-    defmodule Validator do
-      import Api.Validation, only: [validate: 1]
-
-      validate do
-        string :foo
-        string :bar
-      end
-    end
-
-    errors = Validator.validate(%{foo: :foo, bar: :bar})
-    assert [{[:foo], _}, {[:bar], _}] = errors
   end
 
   test "string: regex" do

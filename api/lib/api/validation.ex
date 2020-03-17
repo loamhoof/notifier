@@ -181,6 +181,20 @@ defmodule Api.Validation do
     end
   end
 
+  defmacro validate_boolean(value, ctx, opts \\ []) do
+    quote bind_quoted: [value: value, ctx: ctx, opts: opts] do
+      cond do
+        not is_boolean(value) ->
+          {ctx, "not a boolean"}
+
+        true ->
+          validators = %{}
+
+          Api.Validation.validate_options(validators, opts)
+      end
+    end
+  end
+
   defmacro validate_integer(value, ctx, opts \\ []) do
     quote bind_quoted: [value: value, ctx: ctx, opts: opts] do
       cond do

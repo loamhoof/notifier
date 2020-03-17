@@ -4,10 +4,11 @@
     required: :*,
     map: :*,
     list: :*,
+    boolean: :*,
     string: :*,
     integer: :*,
     duration: :*,
     elem: :*,
-    regex: :*
+    regex: :*,
   ]
 ]

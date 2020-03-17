@@ -4,6 +4,7 @@
     required: :*,
     map: :*,
     list: :*,
+    boolean: :*,
     string: :*,
     integer: :*,
     duration: :*,
