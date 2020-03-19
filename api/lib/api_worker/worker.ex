@@ -7,12 +7,15 @@ defmodule ApiWorker.Worker do
   @callback run(
               config :: map(),
               last_result ::
-                nil | {body :: String.t(), url :: String.t(), acked_at :: DateTime.t()}
+                nil
+                | ApiWorker.ResultManager.last_result()
             ) :: on_run()
 
   require Logger
 
   use GenServer, restart: :transient
+
+  alias ApiWorker.ResultManager
 
   @spec start_link({String.t(), {String.t(), NaiveDateTime.t(), map()}}) :: GenServer.on_start()
   def start_link({task_type, init_state}) do
@@ -26,9 +29,9 @@ defmodule ApiWorker.Worker do
     GenServer.call(server, :info)
   end
 
-  @spec ack(GenServer.server(), DateTime.t()) :: :ok
-  def ack(server, acked_at) do
-    GenServer.cast(server, {:ack, acked_at})
+  @spec ack(GenServer.server(), DateTime.t(), term()) :: :ok
+  def ack(server, acked_at, acked_with) do
+    GenServer.cast(server, {:ack, acked_at, acked_with})
   end
 
   @spec unack(GenServer.server()) :: :ok
@@ -69,8 +72,11 @@ defmodule ApiWorker.Worker do
   end
 
   @impl true
-  def handle_cast({:ack, acked_at}, {_, _, last_result} = state) do
-    new_last_result = put_elem(last_result, 2, acked_at)
+  def handle_cast({:ack, acked_at, acked_with}, {_, _, last_result} = state) do
+    new_last_result =
+      last_result
+      |> put_elem(2, acked_at)
+      |> put_elem(3, acked_with)
 
     {:noreply, put_elem(state, 2, new_last_result), :hibernate}
   end
@@ -88,8 +94,8 @@ defmodule ApiWorker.Worker do
       case module.run(config, last_result) do
         # send to load processor
         {:ok, body, url} ->
-          ApiWorker.ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
-          {body, url, nil}
+          ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
+          {body, url, nil, nil}
 
         {:error, reason} ->
           Logger.warn(reason)
@@ -119,11 +125,11 @@ defmodule ApiWorker.Worker do
 
   ## Helpers
 
-  @spec if_diff(on_run(), {body :: String.t(), url :: String.t(), acked_at :: DateTime.t()}) ::
+  @spec if_diff(on_run(), ResultManager.last_result()) ::
           on_run()
   def if_diff(notif, nil), do: notif
 
-  def if_diff(notif, {last_body, last_url, _}) do
+  def if_diff(notif, {last_body, last_url, _, _}) do
     case notif do
       {:ok, new_body, new_url} when {new_body, new_url} == {last_body, last_url} ->
         :nothing

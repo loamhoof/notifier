@@ -1,6 +1,8 @@
 defmodule ApiWorker.WorkerRegistry do
   use GenServer
 
+  alias ApiWorker.ResultManager
+
   @spec start_link(GenServer.options()) :: GenServer.on_start()
   def start_link(opts) do
     GenServer.start_link(__MODULE__, :ok, opts)
@@ -23,14 +25,14 @@ defmodule ApiWorker.WorkerRegistry do
     GenServer.call(server, {:kill, task_name})
   end
 
-  @spec register(GenServer.server(), String.t()) :: :ok
+  @spec register(GenServer.server(), String.t()) :: ResultManager.last_result()
   def register(server, task_name) do
     GenServer.call(server, {:register, task_name, self()})
   end
 
-  @spec on_task_ack(GenServer.server(), String.t(), DateTime.t()) :: :ok
-  def on_task_ack(server, task_name, acked_at) do
-    GenServer.cast(server, {:send_ack, task_name, acked_at})
+  @spec on_task_ack(GenServer.server(), String.t(), DateTime.t(), term()) :: :ok
+  def on_task_ack(server, task_name, acked_at, acked_with) do
+    GenServer.cast(server, {:send_ack, task_name, acked_at, acked_with})
   end
 
   @spec on_task_unack(GenServer.server(), String.t()) :: :ok
@@ -85,19 +87,19 @@ defmodule ApiWorker.WorkerRegistry do
   def handle_call({:register, task_name, pid}, _from, workers) do
     workers = Map.update!(workers, task_name, fn {version, _} -> {version, pid} end)
 
-    last_result = ApiWorker.ResultManager.last_result(ApiWorker.ResultManager, task_name)
+    last_result = ResultManager.last_result(ApiWorker.ResultManager, task_name)
 
     {:reply, last_result, workers, 500}
   end
 
   @impl true
-  def handle_cast({:send_ack, task_name, acked_at}, workers) do
+  def handle_cast({:send_ack, task_name, acked_at, acked_with}, workers) do
     worker_info = Map.get(workers, task_name)
 
     unless is_nil(worker_info) do
       {_, worker_pid} = worker_info
 
-      ApiWorker.Worker.ack(worker_pid, acked_at)
+      ApiWorker.Worker.ack(worker_pid, acked_at, acked_with)
     end
 
     {:noreply, workers, 500}

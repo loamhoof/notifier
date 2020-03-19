@@ -27,11 +27,30 @@ defmodule ApiWeb.V1.Task.AckController do
         |> json(%{"message" => "Cannot ack a result which has not been sent yet"})
 
       true ->
-        ack(conn, task_result)
+        acked_at = DateTime.utc_now() |> DateTime.truncate(:second)
+        acked_with = get_body(conn)
+
+        case ack(task_result, acked_at, acked_with) do
+          {:ok, task_result} ->
+            ApiWorker.EventManager.ack(
+              ApiWorker.EventManager,
+              task_result.task_id,
+              acked_at,
+              acked_with
+            )
+
+            json(conn, task_result)
+
+          {:error, reason} ->
+            conn
+            |> put_status(400)
+            |> json(reason)
+        end
     end
   end
 
   @spec get_task_result(%{required(String.t()) => String.t()}) :: %Result{} | nil
+  defp get_task_result(params)
 
   defp get_task_result(%{"task_id" => task_id}) do
     Repo.one(
@@ -46,24 +65,21 @@ defmodule ApiWeb.V1.Task.AckController do
     Repo.get(Result, result_id)
   end
 
-  @spec ack(Plug.Conn.t(), %Result{}) :: Plug.Conn.t()
-  defp ack(conn, task_result) do
-    now = DateTime.utc_now() |> DateTime.truncate(:second)
+  @spec get_body(%Plug.Conn{}) :: term()
+  defp get_body(%Plug.Conn{body_params: %{"_json" => json}}), do: json
+  defp get_body(%Plug.Conn{body_params: json}) when json == %{}, do: nil
+  defp get_body(%Plug.Conn{body_params: json}), do: json
 
+  @spec ack(%Result{}, DateTime.t(), term()) :: Api.ok(%Result{}, String.t())
+  defp ack(task_result, acked_at, acked_with) do
     result =
       task_result
-      |> change(%{acked_at: now})
+      |> change(%{acked_at: acked_at, acked_with: Jason.encode!(acked_with)})
       |> Repo.update()
 
     case result do
-      {:ok, task_result} ->
-        ApiWorker.EventManager.ack(ApiWorker.EventManager, task_result.task_id, now)
-        json(conn, task_result)
-
-      {:error, %{errors: errors}} ->
-        conn
-        |> put_status(400)
-        |> json(errors)
+      {:ok, task_result} -> {:ok, task_result}
+      {:error, %{errors: errors}} -> {:error, inspect(errors)}
     end
   end
 end

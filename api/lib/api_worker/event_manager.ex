@@ -12,9 +12,9 @@ defmodule ApiWorker.EventManager do
 
   ## Client API
 
-  @spec ack(GenServer.server(), pos_integer(), DateTime.t()) :: :ok
-  def ack(server, task_id, acked_at) do
-    GenServer.cast(server, {:ack, task_id, acked_at})
+  @spec ack(GenServer.server(), pos_integer(), DateTime.t(), term()) :: :ok
+  def ack(server, task_id, acked_at, acked_with) do
+    GenServer.cast(server, {:ack, task_id, acked_at, acked_with})
   end
 
   @spec unack(GenServer.server(), pos_integer()) :: :ok
@@ -30,10 +30,15 @@ defmodule ApiWorker.EventManager do
   end
 
   @impl true
-  def handle_cast({:ack, task_id, acked_at}, state) do
+  def handle_cast({:ack, task_id, acked_at, acked_with}, state) do
     task_name = task_name_from_task_id(task_id)
 
-    ApiWorker.WorkerRegistry.on_task_ack(ApiWorker.WorkerRegistry, task_name, acked_at)
+    ApiWorker.WorkerRegistry.on_task_ack(
+      ApiWorker.WorkerRegistry,
+      task_name,
+      acked_at,
+      acked_with
+    )
 
     {:noreply, state, :hibernate}
   end

@@ -9,6 +9,7 @@ defmodule Api.Task.Result do
              :url,
              :sent_at,
              :acked_at,
+             :acked_with,
              :inserted_at,
              :updated_at
            ]}
@@ -19,6 +20,7 @@ defmodule Api.Task.Result do
     field :url, :string
     field :sent_at, :utc_datetime
     field :acked_at, :utc_datetime
+    field :acked_with, :string
 
     timestamps()
   end

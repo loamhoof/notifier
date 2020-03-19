@@ -1,4 +1,7 @@
 defmodule ApiWorker.ResultManager do
+  @type last_result() ::
+          {body :: String.t(), url :: String.t(), acked_at :: DateTime.t(), acked_with :: term()}
+
   use GenServer
 
   import Ecto.Query, only: [from: 2]
@@ -13,8 +16,7 @@ defmodule ApiWorker.ResultManager do
 
   ## Client API
 
-  @spec last_result(GenServer.server(), String.t()) ::
-          {body :: String.t(), url :: String.t(), acked_at :: DateTime.t()}
+  @spec last_result(GenServer.server(), String.t()) :: last_result()
   def last_result(server, task_name) do
     GenServer.call(server, {:last_result, task_name})
   end
@@ -36,13 +38,19 @@ defmodule ApiWorker.ResultManager do
         from r in Result,
           join: t in Task,
           on: r.task_id == t.id,
-          select: {r.body, r.url, r.acked_at},
+          select: {r.body, r.url, r.acked_at, r.acked_with},
           where: t.name == ^task_name,
           order_by: [desc: r.id],
           limit: 1
       )
 
-    {:reply, last_result, state}
+    decoded_last_result =
+      update_in(last_result, [Access.elem(3)], fn
+        nil -> nil
+        encoded_json -> Jason.decode!(encoded_json)
+      end)
+
+    {:reply, decoded_last_result, state}
   end
 
   @impl true

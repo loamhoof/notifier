@@ -33,7 +33,11 @@ defmodule ApiWorker.Worker.RSS do
   end
 
   defp to_notif(%{title: title, article_url: article_url}) do
-    {:ok, title, article_url}
+    if String.starts_with?(article_url, "http") do
+      {:ok, title, article_url}
+    else
+      {:ok, title, ""}
+    end
   end
 
   defp to_notif(_feed_item) do
