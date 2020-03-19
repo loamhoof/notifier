@@ -14,7 +14,7 @@ defmodule Api.Task do
     timestamps()
   end
 
-  @types ~w|rss switch_discount reminder|
+  @types ~w|rss switch_discount reminder channel|
 
   @spec changeset(%__MODULE__{}, Plug.Conn.params()) :: Ecto.Changeset.t(%__MODULE__{})
   def changeset(task, attrs) do
@@ -31,9 +31,10 @@ defmodule Api.Task do
 
     module =
       case type do
+        "channel" -> Api.Task.Config.Channel
+        "reminder" -> Api.Task.Config.Reminder
         "rss" -> Api.Task.Config.RSS
         "switch_discount" -> Api.Task.Config.SwitchDiscount
-        "reminder" -> Api.Task.Config.Reminder
       end
 
     Config.validate_config(changeset, module)

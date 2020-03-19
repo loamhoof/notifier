@@ -45,9 +45,10 @@ defmodule ApiWorker.Worker do
   def init({task_type, {task_name, _, _}} = init_state) do
     module =
       case task_type do
+        "channel" -> ApiWorker.Worker.Channel
+        "reminder" -> ApiWorker.Worker.Reminder
         "rss" -> ApiWorker.Worker.RSS
         "switch_discount" -> ApiWorker.Worker.SwitchDiscount
-        "reminder" -> ApiWorker.Worker.Reminder
       end
 
     Logger.debug("Start #{task_name}")
