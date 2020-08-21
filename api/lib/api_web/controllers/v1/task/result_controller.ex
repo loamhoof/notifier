@@ -1,7 +1,7 @@
 defmodule ApiWeb.V1.Task.ResultController do
   use ApiWeb, :controller
 
-  import Ecto.Query, only: [from: 1, where: 2]
+  import Ecto.Query, only: [from: 1, where: 2, where: 3]
 
   alias Api.{Repo, Task.Result}
 
@@ -11,6 +11,7 @@ defmodule ApiWeb.V1.Task.ResultController do
       Result
       |> from()
       |> maybe_task_id_filter(params)
+      |> maybe_unacked_filter(params)
       |> Repo.all()
 
     json(conn, results)
@@ -40,6 +41,14 @@ defmodule ApiWeb.V1.Task.ResultController do
     case Map.fetch(params, "task_id") do
       {:ok, task_id} -> where(query, task_id: ^task_id)
       :error -> query
+    end
+  end
+
+  defp maybe_unacked_filter(query, params) do
+    if Map.has_key?(params, "unacked") do
+      where(query, [r], is_nil(r.acked_with))
+    else
+      query
     end
   end
 end
