@@ -45,10 +45,14 @@ defmodule ApiWorker.ResultManager do
       )
 
     decoded_last_result =
-      update_in(last_result, [Access.elem(3)], fn
-        nil -> nil
-        encoded_json -> Jason.decode!(encoded_json)
-      end)
+      if is_nil(last_result) do
+        nil
+      else
+        update_in(last_result, [Access.elem(3)], fn
+          nil -> nil
+          encoded_json -> Jason.decode!(encoded_json)
+        end)
+      end
 
     {:reply, decoded_last_result, state}
   end
