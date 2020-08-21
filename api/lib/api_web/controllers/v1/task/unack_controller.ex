@@ -36,7 +36,7 @@ defmodule ApiWeb.V1.Task.UnackController do
       true ->
         result =
           task_result
-          |> change(%{acked_at: nil})
+          |> change(%{acked_at: nil, acked_with: nil})
           |> Repo.update()
 
         case result do
