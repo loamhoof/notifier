@@ -21,7 +21,7 @@ defmodule Api.Task.Config do
     list "patches", of: :map do
       @required ["field", "pattern", "replacement"]
 
-      elem "field", of: ~w|title body url|
+      elem "field", of: ~w|body url|
       regex "pattern"
       string "replacement"
     end

@@ -1,7 +1,6 @@
 defmodule ApiWorker.Notifier do
   @typep notif() ::
            {id :: pos_integer(), title :: String.t(), body :: String.t(), url :: String.t()}
-  @typep patch() :: %{field: String.t(), pattern: String.t(), replacement: String.t()}
 
   @callback init() :: {:ok, config :: any()} | {:error, reason :: String.t()}
   @callback push(config :: any(), notif()) ::
@@ -74,12 +73,8 @@ defmodule ApiWorker.Notifier do
 
   @spec send_notif(%Task{}, %Result{}, module(), map()) :: :ok | :error
   defp send_notif(task, result, module, config) do
-    notif = {result.id, task.name, result.body, result.url}
-    patches = Map.get(task.config, "patches", [])
-
     sent? =
-      patches
-      |> apply_patches(notif)
+      {result.id, task.name, result.body, result.url}
       |> (&module.push(config, &1)).()
 
     case sent? do
@@ -111,27 +106,5 @@ defmodule ApiWorker.Notifier do
       {:error, %{errors: errors}} ->
         Logger.warn("could not update result [#{task.name} / #{result.id}]: #{inspect(errors)}")
     end
-  end
-
-  @spec apply_patches(list(patch()), notif()) :: notif()
-  defp apply_patches(patches, notif) do
-    Enum.reduce(patches, notif, &apply_patch(&1, &2))
-  end
-
-  @spec apply_patch(patch(), notif()) :: notif()
-  defp apply_patch(
-         %{"field" => field, "pattern" => pattern, "replacement" => replacement},
-         notif
-       ) do
-    regex = Regex.compile!(pattern)
-
-    elem_index =
-      case field do
-        "title" -> 1
-        "body" -> 2
-        "url" -> 3
-      end
-
-    update_in(notif, [Access.elem(elem_index)], &Regex.replace(regex, &1, replacement))
   end
 end

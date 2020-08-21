@@ -1,7 +1,7 @@
 defmodule ApiWorker.Worker.RSS do
   @behaviour ApiWorker.Worker
 
-  import ApiWorker.Worker, only: [if_diff: 2]
+  import ApiWorker.Worker, only: [if_diff: 3]
 
   @impl true
   def run(%{"feed" => feed} = config, last_result) do
@@ -11,7 +11,7 @@ defmodule ApiWorker.Worker.RSS do
          item when not is_nil(item) <- find(items, filters) do
       item
       |> to_notif()
-      |> if_diff(last_result)
+      |> if_diff(config, last_result)
     else
       nil -> :nothing
       {:ok, %{items: []}} -> {:error, "empty feed"}

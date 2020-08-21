@@ -4,6 +4,10 @@ defmodule ApiWorker.Worker do
            | {:ok, body :: String.t(), url :: String.t()}
            | {:error, reason :: String.t()}
 
+  @typep patch() :: %{field: String.t(), pattern: String.t(), replacement: String.t()}
+  @typep notif() ::
+           {body :: String.t(), url :: String.t()}
+
   @callback run(
               config :: map(),
               last_result ::
@@ -95,6 +99,10 @@ defmodule ApiWorker.Worker do
       case module.run(config, last_result) do
         # send to load processor
         {:ok, body, url} ->
+          {body, url} =
+            Map.get(config, "patches", [])
+            |> apply_patches({body, url})
+
           ResultManager.push(ApiWorker.ResultManager, task_name, body, url)
           {body, url, nil, nil}
 
@@ -126,14 +134,40 @@ defmodule ApiWorker.Worker do
 
   ## Helpers
 
-  @spec if_diff(on_run(), ResultManager.last_result()) ::
-          on_run()
-  def if_diff(notif, nil), do: notif
+  @spec apply_patches(list(patch()), notif()) :: notif()
+  defp apply_patches(patches, notif) do
+    Enum.reduce(patches, notif, &apply_patch(&1, &2))
+  end
 
-  def if_diff(notif, {last_body, last_url, _, _}) do
+  @spec apply_patch(patch(), notif()) :: notif()
+  defp apply_patch(
+         %{"field" => field, "pattern" => pattern, "replacement" => replacement},
+         notif
+       ) do
+    regex = Regex.compile!(pattern)
+
+    elem_index =
+      case field do
+        "body" -> 0
+        "url" -> 1
+      end
+
+    update_in(notif, [Access.elem(elem_index)], &Regex.replace(regex, &1, replacement))
+  end
+
+  @spec if_diff(on_run(), config :: map(), ResultManager.last_result()) ::
+          on_run()
+  def if_diff(notif, _config, nil), do: notif
+
+  def if_diff(notif, config, {last_body, last_url, _, _}) do
     case notif do
-      {:ok, new_body, new_url} when {new_body, new_url} == {last_body, last_url} ->
-        :nothing
+      {:ok, new_body, new_url} ->
+        patches = Map.get(config, "patches", [])
+
+        case apply_patches(patches, {new_body, new_url}) do
+          {^last_body, ^last_url} -> :nothing
+          _ -> notif
+        end
 
       anything ->
         anything
