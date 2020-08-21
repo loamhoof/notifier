@@ -1,7 +1,7 @@
 defmodule ApiWeb.V1.Task.ResultController do
   use ApiWeb, :controller
 
-  import Ecto.Query, only: [from: 1, where: 2, where: 3]
+  import Ecto.Query, only: [from: 2, where: 2, where: 3]
 
   alias Api.{Repo, Task.Result}
 
@@ -9,7 +9,7 @@ defmodule ApiWeb.V1.Task.ResultController do
   def index(conn, params) do
     results =
       Result
-      |> from()
+      |> from(order_by: [desc: :inserted_at])
       |> maybe_task_id_filter(params)
       |> maybe_unacked_filter(params)
       |> Repo.all()

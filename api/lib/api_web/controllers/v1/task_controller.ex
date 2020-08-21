@@ -1,11 +1,13 @@
 defmodule ApiWeb.V1.TaskController do
   use ApiWeb, :controller
 
+  import Ecto.Query, only: [from: 2]
+
   alias Api.{Repo, Task}
 
   @spec index(Plug.Conn.t(), %{}) :: Plug.Conn.t()
   def index(conn, _params) do
-    tasks = Repo.all(Task)
+    tasks = Repo.all(from Task, order_by: :name)
 
     json(conn, tasks)
   end
