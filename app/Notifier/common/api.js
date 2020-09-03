@@ -51,6 +51,9 @@ export default {
     },
 
     // task results
+    fetchAllUnackedTaskResults() {
+        return this.get(`${BASE_URL}/task_results?unacked`);
+    },
     fetchTaskResults(taskID) {
         return this.get(`${BASE_URL}/tasks/${taskID}/results`);
     },

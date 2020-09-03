@@ -2,6 +2,7 @@ import React, { PureComponent } from 'react';
 import {
     ActivityIndicator,
     Button,
+    StyleSheet,
     Text,
     TouchableNativeFeedback,
     View
@@ -28,30 +29,6 @@ export default class Tasks extends PureComponent {
         });
     }
 
-    async deleteTask(taskID) {
-        try {
-            await API.deleteTask(taskID);
-        } catch (error) {
-            console.warn(error);
-
-            return;
-        }
-
-        this.setState((state) => {
-            let tasks = state.tasks;
-            const taskIndex = tasks.findIndex((t) => t.id == taskID);
-            if (taskIndex == -1) {
-                return {};
-            }
-
-            tasks.splice(taskIndex, 1);
-
-            return {
-                tasks: [...tasks]
-            };
-        });
-    }
-
     render() {
         let content;
         if (this.state.isLoading) {
@@ -68,7 +45,7 @@ export default class Tasks extends PureComponent {
 
     renderLoading() {
         return (
-            <ActivityIndicator size="large" color="#0000ff" />
+            <ActivityIndicator size="large" color="#0000FF" />
         );
     }
 
@@ -76,17 +53,33 @@ export default class Tasks extends PureComponent {
         return this.state.tasks.map(this.renderOne.bind(this));
     }
 
-    renderOne(task) {
+    renderOne(task, i) {
+        const style = [styles.task];
+        if (i > 0) {
+            style.push(styles.taskNotFirst);
+        }
+
         return (
             <View key={ task.id }>
                 <TouchableNativeFeedback
                     onPress={ this.props.goTo.bind(this, 'task', { taskID: task.id }) }>
-                    <View>
-                        <Text>{ `${task.name} - ${task.type}` }</Text>
+                    <View style={ style }>
+                        <Text>{ task.name }</Text>
+                        <Text>{ task.type }</Text>
                     </View>
                 </TouchableNativeFeedback>
-                {/*<Button title="Delete" onPress={ this.deleteTask.bind(this, task.id) } />*/}
             </View>
         );
     }
 };
+
+const styles = StyleSheet.create({
+    task: {
+        minHeight: 75,
+        padding: 10,
+        justifyContent: 'space-around',
+    },
+    taskNotFirst: {
+        borderTopWidth: 1
+    }
+});

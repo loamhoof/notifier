@@ -2,7 +2,9 @@ import React, { PureComponent } from 'react';
 import {
     DrawerLayoutAndroid,
     Linking,
+    StyleSheet,
     Text,
+    TouchableNativeFeedback,
     View
 } from 'react-native';
 import firebase from 'react-native-firebase';
@@ -10,6 +12,7 @@ import firebase from 'react-native-firebase';
 import Task from './components/task';
 import Tasks from './components/tasks';
 import NewTask from './components/task-new';
+import UnackedResults from './components/results-unacked';
 
 import API from './common/api';
 
@@ -17,13 +20,14 @@ const ROUTER = {
     task: Task,
     tasks: Tasks,
     newTask: NewTask,
+    unackedResults: UnackedResults,
 };
 
 export default class App extends PureComponent {
     deregisters = [];
 
     state = {
-        location: 'newTask',
+        location: 'tasks',
         locationParams: {},
     };
 
@@ -32,6 +36,8 @@ export default class App extends PureComponent {
             location: newLocation,
             locationParams: newLocationParams,
         });
+
+        this.refs['drawer'].closeDrawer();
     }
 
     render() {
@@ -42,6 +48,7 @@ export default class App extends PureComponent {
 
         return (
             <DrawerLayoutAndroid
+              ref='drawer'
               drawerWidth={ 300 }
               renderNavigationView={ this.renderNavigationView.bind(this) }>
                 { view }
@@ -51,14 +58,28 @@ export default class App extends PureComponent {
 
     renderNavigationView() {
         return (
-            <View style={{ flex: 1, backgroundColor: '#fff' }}>
-              <Text style={{ margin: 10, fontSize: 15, textAlign: 'left' }}>I'm in the Drawer!</Text>
+            <View>
+                <View>
+                    <TouchableNativeFeedback
+                        onPress={ this.goTo.bind(this, 'unackedResults') }>
+                        <View style={ styles.navViewEl }>
+                            <Text style={ styles.navViewText }>Notifications</Text>
+                        </View>
+                    </TouchableNativeFeedback>
+                </View>
+                <View>
+                    <TouchableNativeFeedback
+                        onPress={ this.goTo.bind(this, 'tasks') }>
+                        <View style={ [styles.navViewEl, styles.navViewElBorder ] }>
+                            <Text style={ styles.navViewText }>Tasks</Text>
+                        </View>
+                    </TouchableNativeFeedback>
+                </View>
             </View>
         );
     }
 
     async handleOpenedNotification(data) {
-        console.log('Handling', data.id);
         const url = data.url;
         if (!url) {
             return;
@@ -71,24 +92,17 @@ export default class App extends PureComponent {
             return;
         }
 
-        console.log('Opening', url);
         await Linking.openURL(url);
 
         const resultID = data.id;
         await API.ackTaskResult(resultID);
-        console.log('Acked', resultID);
     }
 
     async componentDidMount() {
-        console.log('Mount App');
         const enabled = await firebase.messaging().hasPermission();
         if (!enabled) {
             await firebase.messaging().requestPermission();
         }
-
-        // const token = await firebase.messaging().getToken();
-
-        // console.log(`FCM Token: ${token}`);
 
         const channel = new firebase.notifications.Android.Channel(
             'notifier',
@@ -97,8 +111,6 @@ export default class App extends PureComponent {
         await firebase.notifications().android.createChannel(channel);
 
         this.deregisters.push(firebase.notifications().onNotification((notification) => {
-            console.log('Received', notification._title, notification._body);
-
             notification.android.setChannelId('notifier');
             notification.android.setPriority(firebase.notifications.Android.Priority.Max);
             notification.android.setAutoCancel(true);
@@ -107,7 +119,6 @@ export default class App extends PureComponent {
 
         this.deregisters.push(firebase.notifications().onNotificationOpened((notification) => {
             const data = notification.notification.data;
-            console.log('Opened', data.id);
             this.handleOpenedNotification(data);
         }));
 
@@ -117,14 +128,27 @@ export default class App extends PureComponent {
         }
 
         const data = initialNotification.notification.data;
-        console.log('Initial', data.id);
         this.handleOpenedNotification(data);
     }
 
     componentWillUnmount() {
-        console.log('Unmount App');
         for (const deregister of this.deregisters) {
             deregister();
         }
     }
 };
+
+const styles = StyleSheet.create({
+    navViewEl: {
+        paddingLeft: 30,
+        height: 60,
+        justifyContent: 'center'
+    },
+    navViewElBorder: {
+        borderTopColor: '#000',
+        borderTopWidth: 1
+    },
+    navViewText: {
+        fontWeight: 'bold'
+    }
+});

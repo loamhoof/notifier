@@ -1,14 +1,17 @@
 import React, { PureComponent } from 'react';
 import {
     Button,
+    Image,
     Picker,
+    StyleSheet,
     Text,
     TextInput,
+    TouchableNativeFeedback,
     View
 } from 'react-native';
 
 import API from '../common/api';
-import { isTrueish } from '../common/validators';
+import { isTrueish, everyIs, objectIs, isOneOf, isRegex } from '../common/validators';
 
 import ReminderForm from './task-new-forms/reminder.js';
 import RSSForm from './task-new-forms/rss.js';
@@ -16,7 +19,7 @@ import SwitchDiscountForm from './task-new-forms/switch_discount.js';
 
 
 export default class NewTask extends PureComponent {
-    DEFAULT_TASK_TYPE = 'switch_discount';
+    DEFAULT_TASK_TYPE = 'rss';
 
     state = {
         form: {},
@@ -40,12 +43,19 @@ export default class NewTask extends PureComponent {
             default: null,
             isValid: isTrueish,
         },
+        patches: {
+            default: [],
+            isValid: everyIs(objectIs({
+                field: isOneOf(['body', 'url']),
+                pattern: isRegex,
+            })),
+        }
     }
 
     typeForms = {
-        reminder: ReminderForm.form,
+        // reminder: ReminderForm.form,
         rss: RSSForm.form,
-        switch_discount: SwitchDiscountForm.form,
+        // switch_discount: SwitchDiscountForm.form,
     }
 
     constructor(props) {
@@ -112,6 +122,34 @@ export default class NewTask extends PureComponent {
         });
     }
 
+    addPatch() {
+        const patches = this.state.form.patches;
+        patches.push({
+            field: 'url',
+            pattern: '',
+            replacement: '',
+        });
+
+        this.changeFormParam('patches', patches);
+    }
+
+    changePatch(patchIndex, key, newValue) {
+        const patches = [...this.state.form.patches];
+        patches[patchIndex] = {
+            ...patches[patchIndex],
+            [key]: newValue,
+        };
+
+        this.changeFormParam('patches', patches);
+    }
+
+    deletePatch(patchIndex) {
+        const patches = this.state.form.patches;
+        patches.splice(patchIndex, 1);
+
+        this.changeFormParam('patches', patches);
+    }
+
     changeFormParam(paramKey, newValue) {
         this.setState((state) => {
             const [castValue, isValidValue, computedValue] = this.computeParam(this.form[paramKey], newValue);
@@ -165,7 +203,7 @@ export default class NewTask extends PureComponent {
         try {
             await API.createTask({
                 ...this.state.castForm,
-                config: { ...this.state.castTypeForm },
+                config: { patches: this.state.castForm.patches, ...this.state.castTypeForm },
             });
         } catch (error) {
             console.warn(error);
@@ -186,28 +224,38 @@ export default class NewTask extends PureComponent {
 
     render() {
         return <>
-            <Button title="Tasks" onPress={ () => this.props.goTo('tasks') } />
-            <View>
+            <View style={{ flex: 1 }}>
                 <Text>Name</Text>
                 <TextInput
                     value={ this.state.form.name }
                     onChangeText={ this.changeFormParam.bind(this, 'name') } />
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <Text>Patches</Text>
+                    <TouchableNativeFeedback onPress={ this.addPatch.bind(this) }>
+                        <View style={{ padding: 10, borderRadius: 22 }}>
+                            <Image
+                                source={ require('../static/images/add.png') }
+                                style={{ height: 24, width: 24 }} />
+                        </View>
+                    </TouchableNativeFeedback>
+                </View>
+                { this.state.form.patches.map(this.renderPatch.bind(this)) }
                 <Text>Type</Text>
                 <Picker
                     selectedValue={ this.state.form.type }
                     onValueChange={ this.changeTaskType.bind(this) } >
                     <Picker.Item label="" value="" />
-                    <Picker.Item label="Reminder" value="reminder" />
+                    {/* <Picker.Item label="Reminder" value="reminder" /> */}
                     <Picker.Item label="RSS" value="rss" />
-                    <Picker.Item label="Switch Discount" value="switch_discount" />
+                    {/* <Picker.Item label="Switch Discount" value="switch_discount" /> */}
                 </Picker>
                 { this.renderForm() }
-                <Button
-                    title="Create"
-                    disabled={ this.state.isSubmitting || !this.state.isValid }
-                    onPress={ this.createTask.bind(this) } />
             </View>
-        </>
+            <Button
+                title="Create"
+                disabled={ this.state.isSubmitting || !this.state.isValid }
+                onPress={ this.createTask.bind(this) } />
+        </>;
     }
 
     renderForm() {
@@ -220,4 +268,36 @@ export default class NewTask extends PureComponent {
             return SwitchDiscountForm.render.apply(this);
         }
     }
+
+    renderPatch(patch, patchIndex) {
+        return (
+            <View
+                key={ `patch-${patchIndex}` }
+                style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Picker style={{ width: 100 }}
+                    selectedValue={ patch.field }
+                    onValueChange={ this.changePatch.bind(this, patchIndex, 'field') } >
+                    <Picker.Item label="Body" value="body" />
+                    <Picker.Item label="URL" value="url" />
+                </Picker>
+                <TextInput style={{ flex: 1 }}
+                    placeholder="Pattern"
+                    value={ patch.pattern }
+                    onChangeText={ this.changePatch.bind(this, patchIndex, 'pattern') } />
+                <TextInput style={{ flex: 1 }}
+                    placeholder="Replace with"
+                    value={ patch.replacement }
+                    onChangeText={ this.changePatch.bind(this, patchIndex, 'replacement') } />
+                <TouchableNativeFeedback onPress={ this.deletePatch.bind(this, patchIndex) }>
+                    <View style={{ padding: 10, borderRadius: 22 }}>
+                        <Image
+                            source={ require('../static/images/delete.png') }
+                            style={{ height: 24, width: 24 }} />
+                    </View>
+                </TouchableNativeFeedback>
+            </View>
+        );
+    }
 };
+
+const styles = StyleSheet.create({});
