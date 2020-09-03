@@ -1,16 +1,27 @@
 defmodule Api.MixProject do
   use Mix.Project
 
+  @version "0.1.0"
+
   def project do
     [
       app: :api,
-      version: "0.1.0",
-      elixir: "~> 1.5",
+      version: @version,
+      elixir: "~> 1.10",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: [:phoenix] ++ Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
-      deps: deps()
+      deps: deps(),
+      default_release: :api,
+      releases: [
+        api: fn ->
+          [
+            include_executables_for: [:unix],
+            version: @version
+          ]
+        end
+      ]
     ]
   end
 

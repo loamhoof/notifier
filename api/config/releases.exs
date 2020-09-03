@@ -1,13 +1,22 @@
 import Config
 
-port = System.get_env("PORT", "80") |> String.to_integer()
+secret_key_base =
+  System.get_env(
+    "SECRET_KEY_BASE",
+    :crypto.strong_rand_bytes(64) |> Base.encode64() |> binary_part(0, 64)
+  )
+
+host = System.get_env("HOST") || raise "HOST is not set"
+port = System.get_env("PORT", "4000") |> String.to_integer()
 
 config :api, ApiWeb.Endpoint,
-  url: [
-    host: System.get_env("HOST", "localhost"),
-    port: port
+  url: [host: host, port: port],
+  http: [
+    port: port,
+    transport_options: [socket_opts: [:inet6]]
   ],
-  http: [port: port]
+  secret_key_base: secret_key_base,
+  server: true
 
 config :api, Api.Repo,
   log: System.get_env("DB_DEBUG", "false") == "true",
@@ -15,6 +24,7 @@ config :api, Api.Repo,
   password: System.fetch_env!("DB_PASSWORD"),
   hostname: System.fetch_env!("DB_HOSTNAME"),
   database: System.fetch_env!("DB_DATABASE"),
+  port: System.get_env("DB_PORT", "5432") |> String.to_integer(),
   pool_size: System.get_env("DB_POOL_SIZE", "10") |> String.to_integer()
 
 config :api,

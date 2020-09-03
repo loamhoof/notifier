@@ -14,6 +14,8 @@ services:
       DB_PASSWORD: postgres
       DB_HOSTNAME: notifier_db
       DB_DATABASE: notifier
+      FCM_SERVER_KEY: aa
+      FCM_DEVICE_TOKEN: bb
   db:
     container_name: notifier_db
     image: postgres:11.4-alpine
