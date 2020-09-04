@@ -55,7 +55,7 @@ export default class NewTask extends PureComponent {
     typeForms = {
         // reminder: ReminderForm.form,
         rss: RSSForm.form,
-        // switch_discount: SwitchDiscountForm.form,
+        switch_discount: SwitchDiscountForm.form,
     }
 
     constructor(props) {
@@ -247,7 +247,7 @@ export default class NewTask extends PureComponent {
                     <Picker.Item label="" value="" />
                     {/* <Picker.Item label="Reminder" value="reminder" /> */}
                     <Picker.Item label="RSS" value="rss" />
-                    {/* <Picker.Item label="Switch Discount" value="switch_discount" /> */}
+                    {<Picker.Item label="Switch Discount" value="switch_discount" />}
                 </Picker>
                 { this.renderForm() }
             </View>

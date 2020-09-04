@@ -10,7 +10,7 @@ defmodule ApiWorker.Worker.SwitchDiscount do
     with {:ok, body} <- get(url),
          {:ok, body} <- Jason.decode(body) do
       body
-      |> to_notif(link)
+      |> to_notif(country, link)
       |> if_diff(config, last_result)
     else
       {:error, reason} -> {:error, "#{inspect(reason)}"}
@@ -26,14 +26,14 @@ defmodule ApiWorker.Worker.SwitchDiscount do
     end
   end
 
-  defp to_notif(%{"prices" => [prices]}, link) do
+  defp to_notif(%{"prices" => [prices]}, country, link) do
     if Map.has_key?(prices, "discount_price") do
       case extract(prices) do
         :error ->
           {:error, "unexpected prices body: #{inspect(prices)}"}
 
         {:ok, regular_value, discount_value, from, to} ->
-          case make_notif_body(regular_value, discount_value, from, to) do
+          case make_notif_body(country, regular_value, discount_value, from, to) do
             {:ok, notif_body} -> {:ok, notif_body, link}
             {:error, reason} -> {:error, "unexpected error: #{inspect(reason)}"}
           end
@@ -43,7 +43,7 @@ defmodule ApiWorker.Worker.SwitchDiscount do
     end
   end
 
-  defp to_notif(body, _link) do
+  defp to_notif(body, _country, _link) do
     {:error, "unexpected body: #{inspect(body)}"}
   end
 
@@ -62,18 +62,22 @@ defmodule ApiWorker.Worker.SwitchDiscount do
     :error
   end
 
-  defp make_notif_body(regular_value, discount_value, from, to) do
+  defp make_notif_body(country, regular_value, discount_value, from, to) do
     with {:ok, from, _} <- DateTime.from_iso8601(from),
          {:ok, to, _} <- DateTime.from_iso8601(to) do
       from = from |> DateTime.to_date() |> Date.to_string()
       to = to |> DateTime.to_date() |> Date.to_string()
       {regular_value, ""} = Float.parse(regular_value)
       {discount_value, ""} = Float.parse(discount_value)
+      formatted_discount_value = format_currency(country, discount_value)
       discount = :erlang.float_to_binary((1 - discount_value / regular_value) * 100, decimals: 0)
-      message = "#{discount_value} (-#{discount}%) from #{from} to #{to}"
+      message = "#{formatted_discount_value} (-#{discount}%) from #{from} to #{to}"
       {:ok, message}
     else
       anything -> {:error, "unexpected error: #{inspect(anything)}"}
     end
   end
+
+  def format_currency("FR", value), do: "#{:erlang.float_to_binary(value, decimals: 2)}€"
+  def format_currency("JP", value), do: "#{:erlang.float_to_binary(value, decimals: 0)}¥"
 end

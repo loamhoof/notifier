@@ -1,4 +1,5 @@
 const BASE_URL = 'http://localhost:4000/api/v1';
+// const BASE_URL = 'https://notifier.loam.one/api/v1';
 
 export default {
     async doReq(url, method, body=null) {

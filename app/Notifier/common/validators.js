@@ -9,6 +9,7 @@ export const isRegex = (value) => {
 
     return true;
 };
+export const matchesRegex = (regex) => (value) => regex.test(value);
 
 export const isOneOf = (enumValues) => (value) => enumValues.includes(value);
 export const everyIs = (validator) => (value) => value.every(validator);

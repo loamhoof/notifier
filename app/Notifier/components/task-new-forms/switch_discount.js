@@ -9,6 +9,7 @@ import Time from '../../common/time';
 import {
     isStrictlyPositive,
     isTrueish,
+    matchesRegex,
 } from '../../common/validators';
 
 
@@ -16,8 +17,7 @@ export default {
     form: {
         id: {
             default: '',
-            cast: (id) => parseInt(id),
-            isValid: isStrictlyPositive,
+            isValid: matchesRegex(/^\d+$/),
         },
         country: {
             default: 'FR',
